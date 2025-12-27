@@ -1,0 +1,40 @@
+[
+ {
+  "directory": "C:\\Users\\camer\\sv",
+  "arguments": [
+   "g++",
+   "-Wall",
+   "-Wextra",
+   "-Wpedantic",
+   "-O1",
+   "-std=c++20",
+   "-o",
+   "sv",
+   "-IC:/msys64/mingw64/include",
+   "-IC:/msys64/mingw64/include/SDL3",
+   "src/main.cpp",
+   "-lSDL3",
+   "-lm"
+  ],
+  "file": "src/main.cpp"
+ },
+ {
+  "directory": "C:\\Users\\camer\\sv",
+  "arguments": [
+   "x86_64-w64-mingw32-g++",
+   "-Wall",
+   "-Wextra",
+   "-Wpedantic",
+   "-O1",
+   "-std=c++20",
+   "-o",
+   "sv.exe",
+   "src/main.cpp",
+   "src/window/window.cpp",
+   "src/renderer/renderer.cpp",
+   "-lSDL3",
+   "-lm"
+  ],
+  "file": "src/renderer/renderer.cpp"
+ }
+]
