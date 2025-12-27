@@ -29,75 +29,129 @@ void renderer::fill_rect(rect builder){
   SDL_RenderFillRect(r, &builder.box);
 }
 
-void renderer::draw_vertices(const std::vector<grid> *vertices){
-  std::cout << "BEGIN" << std::endl;
+//makes dupes idc atm
+std::vector<edge> renderer::make_edges(const std::vector<indice4> *indices){
+  std::vector<edge> edges;
+  for(size_t i = 0; i < indices->size(); i++){
+    const indice4 *ind = &(*indices)[i];
+    edges.push_back({ind->x, ind->y});
+    edges.push_back({ind->y, ind->z});
+    edges.push_back({ind->z, ind->k});
+    edges.push_back({ind->k, ind->x});
+  }
+  return edges;
+}
+
+std::vector<indice3> renderer::quad_to_triangle(const std::vector<indice4> *indices){
+  std::vector<indice3> triangles;
+  for(size_t i = 0; i < indices->size(); i++){
+    const indice4 *ind = &(*indices)[i];
+    triangles.push_back({ind->x, ind->y, ind->z});
+    triangles.push_back({ind->x, ind->z, ind->k});
+  }
+  return triangles;
+}
+
+
+void renderer::print_indice4(const std::vector<indice4> *indices){
+  for(size_t i = 0; i < indices->size(); i++){
+    const indice4 *ind = &(*indices)[i];
+    std::cout << "{ " << ind->x << "," << ind->y << "," << ind->z << "," << ind->k << " }";
+  }
+  std::cout << std::endl;
+}
+
+void renderer::print_indice3(const std::vector<indice3> *indices){
+  for(size_t i = 0; i < indices->size(); i++){
+    const indice3 *ind = &(*indices)[i];
+    std::cout << "{ " << ind->x << "," << ind->y << "," << ind->z << " }";
+  }
+  std::cout << std::endl;
+}
+
+void renderer::print_edges(const std::vector<edge> *edges){
+  for(size_t i = 0; i < edges->size(); i++){
+    const edge *e = &(*edges)[i];
+    std::cout << "{ " << e->x << "," << e->y << " }";
+  }
+  std::cout << std::endl;
+}
+
+void renderer::draw_points(const std::vector<grid_pos> *vertices){
   for(auto it = vertices->begin(); it != vertices->end(); it++){
     set_point(to_screen(project(*it)));
   }
-  std::cout << "END" << std::endl;
 }
 
-std::vector<grid> renderer::rotate_vertices_xz(const std::vector<grid> *vertices, f32 angle){
-  std::vector<grid> rotated = std::vector<grid>(*vertices);
+std::vector<grid_pos> renderer::rotate_vertices_xz(const std::vector<grid_pos> *vertices, f32 angle){
+  std::vector<grid_pos> rotated = std::vector<grid_pos>(*vertices);
   for(size_t i = 0; i < vertices->size(); i++){
     rotated[i] = rotate_xz((*vertices)[i], angle);
   }
   return rotated;
 }
 
-std::vector<grid> renderer::translate_vertices_z(const std::vector<grid> *vertices, f32 dz){
-  std::vector<grid> translated = std::vector<grid>(*vertices);
+std::vector<grid_pos> renderer::translate_vertices_z(const std::vector<grid_pos> *vertices, f32 dz){
+  std::vector<grid_pos> translated = std::vector<grid_pos>(*vertices);
   for(size_t i = 0; i < vertices->size(); i++){
     translated[i] = translate_z((*vertices)[i], dz);
   }
   return translated;
 }
 
-void renderer::set_point(position p){
+
+void renderer::render_wire_frame(const std::vector<edge> *edges, const std::vector<grid_pos> *vertices){
+  for(size_t i = 0; i < edges->size(); i++){
+    const edge *e = &(*edges)[i];
+    grid_pos v0 = (*vertices)[e->x];
+    grid_pos v1 = (*vertices)[e->y];
+
+    scr_pos p0 = to_screen(project(v0));
+    scr_pos p1 = to_screen(project(v1));
+
+    SDL_RenderLine(r, p0.x, p0.y, p1.x, p1.y);
+  }
+}
+
+void renderer::set_point(scr_pos p){
   const f32 size = 8.0f;
   fill_rect(rect(p.x - size / 2, p.y - size / 2, size, size));
 }
 
-grid renderer::translate_z(grid gpos, f32 inc){
-  return grid(gpos.x, gpos.y, gpos.z + inc);
+grid_pos renderer::translate_z(grid_pos gpos, f32 inc){
+  return grid_pos(gpos.x, gpos.y, gpos.z + inc);
 }
 
-grid renderer::translate_x(grid gpos, f32 inc){
-  return grid(gpos.x + inc, gpos.y, gpos.z);
+grid_pos renderer::translate_x(grid_pos gpos, f32 inc){
+  return grid_pos(gpos.x + inc, gpos.y, gpos.z);
 }
 
-grid renderer::translate_y(grid gpos, f32 inc){
-  return grid(gpos.x, gpos.y + inc, gpos.z);
+grid_pos renderer::translate_y(grid_pos gpos, f32 inc){
+  return grid_pos(gpos.x, gpos.y + inc, gpos.z);
 }
 
-position renderer::to_screen(position p){
-  std::cout << "Px: " << p.x << " " << "Py: " << p.y << " ";
-  
+scr_pos renderer::to_screen(scr_pos p){
   const f32 xnorm = (p.x + 1) / 2 * window_width;
   const f32 ynorm = (1.0f - (p.y + 1.0f) / 2) * window_height;
-
-  std::cout << "Pxnorm: " << xnorm << " " << "Pynorm: " << ynorm << " ";
-  std::cout << std::endl;
-
-  return position(xnorm, ynorm);
+  return scr_pos(xnorm, ynorm);
 }
 
-position renderer::project(grid gpos){
+scr_pos renderer::project(grid_pos gpos){
   const f32 dx = gpos.x / gpos.z;
   const f32 dy = gpos.y / gpos.z;
-  return position(dx, dy);
+  return scr_pos(dx, dy);
 }
 
-grid renderer::rotate_yz(grid gpos, f32 angle){
+grid_pos renderer::rotate_yz(grid_pos gpos, f32 angle){
   const f32 c = cos(angle);
   const f32 s = sin(angle);
-  return grid(gpos.x, gpos.y * c - gpos.z * s, gpos.y * s + gpos.z * c);
+  return grid_pos(gpos.x, gpos.y * c - gpos.z * s, gpos.y * s + gpos.z * c);
 }
 
-grid renderer::rotate_xz(grid gpos, f32 angle){
+grid_pos renderer::rotate_xz(grid_pos gpos, f32 angle){
   const f32 update_x = gpos.x * cosf(angle) - gpos.z * sinf(angle);
   const f32 update_y = gpos.y;
   const f32 update_z = gpos.x * sinf(angle) + gpos.z * cosf(angle);
 
-  return grid(update_x, update_y, update_z);
+  return grid_pos(update_x, update_y, update_z);
 }

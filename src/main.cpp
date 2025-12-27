@@ -18,20 +18,31 @@ int main(int argc, char **argv){
   renderer rend = renderer(nullptr, win.get_width(), win.get_height());
   rend.set_renderer(rend.create(win.get_window()));
 
-  std::vector<grid> vertices = {
-    grid(0.25f, 0.25f, 0.25f), 
-    grid(-0.25f, 0.25f, 0.25f),
-    grid(0.25f, -0.25f, 0.25f),
-    grid(-0.25f, -0.25f, 0.25f),
+  std::vector<grid_pos> vertices = {
+    grid_pos(0.25f, 0.25f, 0.25f), 
+    grid_pos(-0.25f, 0.25f, 0.25f),
+    grid_pos(-0.25f, -0.25f, 0.25f),
+    grid_pos(0.25f, -0.25f, 0.25f),
 
-    grid(0.25f, 0.25f, -0.25f), 
-    grid(-0.25f, 0.25f, -0.25),
-    grid(0.25f, -0.25f, -0.25f),
-    grid(-0.25f, -0.25f, -0.25f)
-
+    grid_pos(0.25f, 0.25f, -0.25f), 
+    grid_pos(-0.25f, 0.25f, -0.25),
+    grid_pos(-0.25f, -0.25f, -0.25f),
+    grid_pos(0.25f, -0.25f, -0.25f)
   };
 
+  std::vector<indice4> indices = {
+    indice4(0, 1, 2, 3),
+    indice4(4, 5, 6, 7),
+    indice4(1, 5, 6, 2),
+    indice4(0, 3, 7, 4),
+    indice4(0, 4, 5, 1), 
+    indice4(3, 2, 6, 7)
+  };
+
+  std::vector<edge> edges = rend.make_edges(&indices);
+
   SDL_ShowWindow(win.get_window());
+  SDL_EnableScreenSaver();
   const u32 frame_gate = 1000 / 60;
   bool running = true;
   
@@ -57,9 +68,10 @@ int main(int argc, char **argv){
     }
   
     rend.colour(255, 255, 255, 255);
-    std::vector<grid> rotated = rend.rotate_vertices_xz(&vertices, angle);
-    std::vector<grid> translated = rend.translate_vertices_z(&rotated, 1.0f);
-    rend.draw_vertices(&translated);
+    std::vector<grid_pos> rotated = rend.rotate_vertices_xz(&vertices, angle);
+    std::vector<grid_pos> translated = rend.translate_vertices_z(&rotated, 1.0f);
+    rend.render_wire_frame(&edges, &translated);
+    //rend.draw_points(&translated);
     rend.present();
 
 
