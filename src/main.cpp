@@ -35,19 +35,20 @@ int main(int argc, char **argv){
     return 1;
   }
   stream.pause_audio();
-
-  audio_data data = audio_data(nullptr, 0, 0, 0, 0);
+  
+  strvec::iterator entry_iterator = entries.entry_paths.begin();
+  audio_data *data = new audio_data(nullptr, 0, 0, 0, 0);
   {
-    const char *path = entries.entry_paths[0].c_str();
-    data = read_file(open_file(path));
+    const char *path = (*entry_iterator).c_str();
+    *data = read_file(open_file(path));
   }
 
-  if(!stream.set_stream_ptr(stream.create_stream(stream.spec_from_file(&data)))){
+  if(!stream.set_stream_ptr(stream.create_stream(stream.spec_from_file(data)))){
     log_write_str("Failed create audio stream:", SDL_GetError());
     return 1;
   }
 
-  if(!stream.set_audio_callback(&data)){
+  if(!stream.set_audio_callback(data)){
     log_write_str("Failed to assign audio get callback:", SDL_GetError()); 
     return 1;
   }
@@ -90,11 +91,24 @@ int main(int argc, char **argv){
   SDL_EnableScreenSaver();
   const u32 frame_gate = 1000 / 60;
   bool running = true;
-  
+
   //f32 dz = 0.0f;
   f32 angle = 0.0f;
   while(running){
     u64 start = SDL_GetTicks();
+    //yes sloppy but its just for testing
+    if(data->position >= data->samples){
+      stream.pause_audio();
+      strvec::iterator next_entry = std::next(entry_iterator);
+      if(next_entry == entries.entry_paths.end()){
+        next_entry = entries.entry_paths.begin();
+      }
+      const char *path = (*next_entry).c_str();
+      *data = read_file(open_file(path));
+      stream.resume_audio();
+      entry_iterator++;
+    }
+
     //dz += 1.0f * (1.0f / 60);
     angle += PI*(1.0f/60);
 
