@@ -11,3 +11,4 @@ struct contents {
 };
 
 contents get_directory_contents(const std::string& path);
+void log_write_str(std::string msg, std::string err);

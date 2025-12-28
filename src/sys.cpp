@@ -1,6 +1,17 @@
 #include <filesystem>
 #include <iostream>
+#include <fstream>
 #include "sys.hpp"
+
+void log_write_str(std::string msg, std::string err){
+  std::ofstream file("log.txt");
+  if(!file){
+    std::cerr << "Failed to open file" << std::endl;
+  }
+
+  file << msg << " " << err << '\n';
+  file.close();
+}
 
 contents get_directory_contents(const std::string& path){
   strvec epaths(0), enames(0);
@@ -14,7 +25,7 @@ contents get_directory_contents(const std::string& path){
       i++;
     }
   } catch (const std::filesystem::filesystem_error& e) {
-    std::cerr << "Failed to iterate directory: " << e.what() << std::endl;
+    log_write_str("Failed to iterator directory:", e.what());
     is_valid = false;
   }
   if(i > 0){

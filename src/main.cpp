@@ -11,6 +11,7 @@ static void quit_sdl(void);
 
 int main(int argc, char **argv){
   if(!init_sdl()){
+    log_write_str("Failed to initialize SDL3:", SDL_GetError());
     return 1;
   }
 
@@ -20,11 +21,10 @@ int main(int argc, char **argv){
     entries = get_directory_contents(dir);
   } else {
     std::cout << "Usage: sv relative/path/to/directory" << std::endl;
-    return 0;
   }
 
   if(!entries.valid){
-    return 1;
+    log_write_str("Entries marked invalid", "");
   }
 
   window win = window("sv", 400, 300, SDL_WINDOW_HIDDEN);
