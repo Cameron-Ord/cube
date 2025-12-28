@@ -30,15 +30,13 @@ struct audio_data {
   u32 position;
 };
 
-struct file_reader {
-    static file_data open_file(const char *path);
-    static audio_data read_file(file_data file);
-};
+file_data open_file(const char *path);
+audio_data read_file(file_data file);
 
-class streambuffer{
+class audio_streambuffer{
   public:
-    streambuffer() : stream(nullptr), output_spec({SDL_AUDIO_F32, 2, 44100}), device_id(0) {}
-    ~streambuffer() = default;
+    audio_streambuffer() : stream(nullptr), output_spec({SDL_AUDIO_F32, 2, 44100}), device_id(0) {}
+    ~audio_streambuffer() = default;
 
     u32 open_device(void);
     u32 get_device_id(void) { return device_id; }
@@ -48,7 +46,7 @@ class streambuffer{
     bool query_device_format(SDL_AudioSpec *dst);
 
     bool spec_compare(const SDL_AudioSpec *original, const SDL_AudioSpec *updated);
-    SDL_AudioSpec spec_from_file(const file_data *data);
+    SDL_AudioSpec spec_from_file(const audio_data *data);
     SDL_AudioStream *create_stream(SDL_AudioSpec input_spec);
     SDL_AudioStream *get_stream_ptr(void) { return stream; }
 
@@ -58,8 +56,8 @@ class streambuffer{
 
     void audio_device_close(void);
     void stream_unbind(void);
-    void set_stream_ptr(SDL_AudioStream *sptr) { stream = sptr; }
-    void set_device_id(u32 id) { device_id = id; }
+    bool set_stream_ptr(SDL_AudioStream *sptr) { if(!sptr) { return false; } stream = sptr; return true;  }
+    bool set_device_id(u32 id) { if(!id) { return false; } device_id = id; return true; }
 
   private:
     SDL_AudioStream *stream;

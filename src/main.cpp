@@ -1,4 +1,5 @@
 #include "sys.hpp"
+#include "audio/audio.hpp"
 #include "window/window.hpp"
 #include "renderer/renderer.hpp"
 #include <SDL3/SDL.h>
@@ -25,7 +26,37 @@ int main(int argc, char **argv){
 
   if(!entries.valid){
     log_write_str("Entries marked invalid", "");
+    return 1;
   }
+
+  audio_streambuffer stream;
+  if(!stream.set_device_id(stream.open_device())){
+    log_write_str("Failed to open default audio device:", SDL_GetError());
+    return 1;
+  }
+  stream.pause_audio();
+
+  audio_data data = audio_data(nullptr, 0, 0, 0, 0);
+  {
+    const char *path = entries.entry_paths[0].c_str();
+    data = read_file(open_file(path));
+  }
+
+  if(!stream.set_stream_ptr(stream.create_stream(stream.spec_from_file(&data)))){
+    log_write_str("Failed create audio stream:", SDL_GetError());
+    return 1;
+  }
+
+  if(!stream.set_audio_callback(&data)){
+    log_write_str("Failed to assign audio get callback:", SDL_GetError()); 
+    return 1;
+  }
+
+  if(!stream.audio_stream_bind()){
+    log_write_str("Failed to bind stream to device:", SDL_GetError());
+    return 1;
+  }
+  stream.resume_audio();
 
   window win = window("sv", 400, 300, SDL_WINDOW_HIDDEN);
   win.set_window(win.create());
@@ -96,6 +127,9 @@ int main(int argc, char **argv){
     }
   
   }
+  
+  stream.audio_device_close();
+  stream.stream_destroy();
   quit_sdl();
 	return 0;
 }

@@ -9,7 +9,7 @@ SRCS += src/audio/audio.cpp
 SRCS += src/sys.cpp
 
 CC = x86_64-w64-mingw32-g++
-LFLAGS = -lSDL3 -lm -lsndfile
+LFLAGS = -lSDL3 -lm -lsndfile -mconsole
 CFLAGS  = -Wall -Wextra -Wpedantic -O1 -std=c++20 
 DEBUG_CFLAGS = -fsanitize=address,undefined,leak -fno-omit-frame-pointer -Wshadow -Wconversion -Wnull-dereference -Wdouble-promotion -g
 

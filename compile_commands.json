@@ -36,5 +36,29 @@
    "-lm"
   ],
   "file": "src/renderer/renderer.cpp"
+ },
+ {
+  "directory": "C:\\Users\\camer\\Music\\cube",
+  "arguments": [
+   "x86_64-w64-mingw32-g++",
+   "-Wall",
+   "-Wextra",
+   "-Wpedantic",
+   "-O1",
+   "-std=c++20",
+   "-o",
+   "sv.exe",
+   "src/main.cpp",
+   "src/window/window.cpp",
+   "src/renderer/renderer.cpp",
+   "src/audio/read.cpp",
+   "src/audio/audio.cpp",
+   "src/sys.cpp",
+   "-lSDL3",
+   "-lm",
+   "-lsndfile",
+   "-mconsole"
+  ],
+  "file": "src/sys.cpp"
  }
 ]

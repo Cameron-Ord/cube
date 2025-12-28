@@ -1,16 +1,17 @@
 #include "audio.hpp"
+#include "../sys.hpp"
 #include <sndfile.h>
 #include <iostream>
 #include <cstring>
 #include <vector>
 
-file_data file_reader::open_file(const char *path){
+file_data open_file(const char *path){
   SF_INFO info;
   memset(&info, 0, sizeof(SF_INFO));
   
   SNDFILE *file = sf_open(path, SFM_READ, &info);
   if(!file){
-    std::cerr << "Could not open file->" << sf_strerror(nullptr) << std::endl;
+    log_write_str("Failed to open file:", sf_strerror(nullptr));
     return file_data(nullptr, 0, 0, 0, 0);
   }
 
@@ -22,7 +23,7 @@ file_data file_reader::open_file(const char *path){
   return file_data(file, format, samplerate, channels, frames);
 }
 
-audio_data file_reader::read_file(file_data file){
+audio_data read_file(file_data file){
   std::cout << "Channels: " << file.channels << std::endl;
   std::cout << "Sample Rate: " << file.samplerate << std::endl;
   
@@ -31,7 +32,7 @@ audio_data file_reader::read_file(file_data file){
 
   std::shared_ptr<std::vector<f32>> buffer = std::make_shared<std::vector<f32>>(samples);
   if(sf_read_float(file.open, buffer->data(), samples) < 0){
-    std::cerr << "Error reading audio data->" << sf_strerror(file.open) << std::endl;
+    log_write_str("Error while reading audio chunks:", sf_strerror(file.open));
     sf_close(file.open);
     return audio_data(nullptr, 0, 0, 0, 0);
   }
