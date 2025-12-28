@@ -1,6 +1,7 @@
-#include <SDL3/SDL.h>
+#include "sys.hpp"
 #include "window/window.hpp"
 #include "renderer/renderer.hpp"
+#include <SDL3/SDL.h>
 
 constexpr double PI = 3.14159265358979323846;
 static bool init_sdl(void);
@@ -10,6 +11,19 @@ static void quit_sdl(void);
 
 int main(int argc, char **argv){
   if(!init_sdl()){
+    return 1;
+  }
+
+  contents entries = contents(strvec(), strvec(), false, true);
+  if(argc > 1 && argc < 3){
+    std::string dir = std::string(argv[1]);
+    entries = get_directory_contents(dir);
+  } else {
+    std::cout << "Usage: sv relative/path/to/directory" << std::endl;
+    return 0;
+  }
+
+  if(!entries.valid){
     return 1;
   }
 

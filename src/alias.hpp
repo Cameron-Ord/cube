@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+#include <vector>
 #include <cstdint>
 
 typedef int8_t i8;
@@ -12,3 +14,5 @@ typedef uint64_t u64;
 typedef uint32_t u32;
 typedef float f32;
 typedef double f64;
+
+using strvec = std::vector<std::string>;
