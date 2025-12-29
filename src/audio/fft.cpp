@@ -3,30 +3,37 @@
 #include "fft.hpp"
 #include <iostream>
 
-const f64 MAX_FREQ = 400.0f;
+const f64 MAX_FREQ = 20000.0f;
 const f64 MIN_FREQ = 60.0f;
+const f64 THRESHOLD = 0.10f;
 
-transformer::transformer(void) : output(FFT_SIZE), amplitudes(FFT_SIZE / 2), hamming_values(FFT_SIZE), avg(0.0) {
+
+bool rythm_interpreter::is_less(const f64& sum){
+  return sum * (1.0 + THRESHOLD) < avg;
+}
+
+bool rythm_interpreter::is_more(const f64& sum){
+  return sum > avg * (1.0 + THRESHOLD);
+}
+
+transformer::transformer(void) : output(FFT_SIZE), amplitudes(FFT_SIZE / 2), hamming_values(FFT_SIZE) {
   calculate_window();
 }
 
-void transformer::print_ema(f64 sum){
+void rythm_interpreter::print_ema(f64 sum){
   std::cout << "SUM:" << "(" << sum << ")" << " AVG:" << "(" << avg << ")" << std::endl;
 }
 
-f64 transformer::ema_calculate(f64 sum, f64 alpha){
+f64 rythm_interpreter::ema_calculate(f64 sum, f64 alpha){
   return alpha * sum + (1.0 - alpha) * avg; 
 }
 
-void transformer::fft_exec(const vecf64& fft_in, const i32 sample_rate){
+f64 transformer::fft_exec(const vecf64& fft_in, const i32 sample_rate){
   vecf64 samples = vecf64(fft_in);
   hamming_window(samples);
   iterative_fft(samples);
   compf_to_float();
-
-  const f64 sum = bass_freq_sum(sample_rate);
-  ema_update(ema_calculate(sum, 0.07));
-  print_ema(sum);
+  return bass_freq_sum(sample_rate);
 }
 
 static compf64 c_from_real(const f64 real)
@@ -159,7 +166,12 @@ f64 transformer::bass_freq_sum(const i32 sample_rate){
   for(u32 i = bin_min; i < bin_max && i < amplitudes.size(); i++){
     sum += amplitudes[i] * amplitudes[i];
   }
-  return sum;
+  f64 mean = sum / (bin_max - bin_min);
+  return sqrt(mean);
+}
+
+f32 rythm_interpreter::scale_interpolate(const f32& target_scale, const f32& prev, const f32& smoothing_amount, const i32& fps){
+  return (target_scale - prev) * smoothing_amount * (1.0f / fps);
 }
 
  //f64 transformer::linear_smooth(f64 base, f64 sm, i32 amt, i32 frames)

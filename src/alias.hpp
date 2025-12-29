@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -16,5 +17,7 @@ typedef float f32;
 typedef double f64;
 
 using strvec = std::vector<std::string>;
+using veci32 = std::vector<i32>;
 using vecf32 = std::vector<f32>;
 using vecf64 = std::vector<f64>;
+using unique_vecf32 = std::unique_ptr<vecf32>;

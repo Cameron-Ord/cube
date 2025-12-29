@@ -3,6 +3,8 @@
 #include <SDL3/SDL.h>
 #include <cmath>
 
+const SDL_FColor base = {255, 255, 255, 255};
+
 SDL_Renderer *renderer::create(SDL_Window *w){
   SDL_Renderer *tmp = SDL_CreateRenderer(w, dname);
   if(!tmp){
@@ -27,6 +29,35 @@ void renderer::present(void){
 
 void renderer::fill_rect(rect builder){
   SDL_RenderFillRect(r, &builder.box);
+}
+
+void renderer::render_triangles(const std::vector<grid_pos>& vertices, const std::vector<indice3>& indices, const tri_spec spec){
+  const std::vector<SDL_Vertex> sdl_vertices = vertices_convert_sdl_vertex(vertices, spec);
+  const veci32 flat_indices = indice3_flatten(indices);
+
+  const i32 nvertices = static_cast<i32>(sdl_vertices.size());
+  const i32 nindices = static_cast<i32>(flat_indices.size());
+
+  SDL_RenderGeometry(r, nullptr, sdl_vertices.data(), nvertices, flat_indices.data(), nindices);
+}
+
+std::vector<SDL_Vertex> renderer::vertices_convert_sdl_vertex(const std::vector<grid_pos>& vertices, const tri_spec& spec){
+  std::vector<SDL_Vertex> conv;
+  for(auto it = vertices.begin(); it != vertices.end(); it++){
+    scr_pos pos = to_screen(project(*it, spec.scale));
+    conv.push_back({{pos.x, pos.y}, spec.colour, {0,0}});
+  }
+  return conv;
+}
+
+veci32 renderer::indice3_flatten(const std::vector<indice3>& indices){
+  veci32 flat;
+  for(auto it = indices.begin(); it != indices.end(); it++){
+    flat.push_back(it->x);
+    flat.push_back(it->y);
+    flat.push_back(it->z);
+  }
+  return flat;
 }
 
 //makes dupes idc atm
@@ -79,7 +110,7 @@ void renderer::print_edges(const std::vector<edge> *edges){
 
 void renderer::draw_points(const std::vector<grid_pos> *vertices){
   for(auto it = vertices->begin(); it != vertices->end(); it++){
-    set_point(to_screen(project(*it)));
+    set_point(to_screen(project(*it, 1.0f)));
   }
 }
 
@@ -100,14 +131,14 @@ std::vector<grid_pos> renderer::translate_vertices_z(const std::vector<grid_pos>
 }
 
 
-void renderer::render_wire_frame(const std::vector<edge> *edges, const std::vector<grid_pos> *vertices){
+void renderer::render_wire_frame(const std::vector<edge> *edges, const std::vector<grid_pos> *vertices, f32 scale){
   for(size_t i = 0; i < edges->size(); i++){
     const edge *e = &(*edges)[i];
     grid_pos v0 = (*vertices)[e->x];
     grid_pos v1 = (*vertices)[e->y];
 
-    scr_pos p0 = to_screen(project(v0));
-    scr_pos p1 = to_screen(project(v1));
+    scr_pos p0 = to_screen(project(v0, scale));
+    scr_pos p1 = to_screen(project(v1, scale));
 
     SDL_RenderLine(r, p0.x, p0.y, p1.x, p1.y);
   }
@@ -136,9 +167,9 @@ scr_pos renderer::to_screen(scr_pos p){
   return scr_pos(xnorm, ynorm);
 }
 
-scr_pos renderer::project(grid_pos gpos){
-  const f32 dx = gpos.x / gpos.z;
-  const f32 dy = gpos.y / gpos.z;
+scr_pos renderer::project(grid_pos gpos, f32 scale){
+  const f32 dx = (gpos.x / gpos.z) * scale;
+  const f32 dy = (gpos.y / gpos.z) * scale;
   return scr_pos(dx, dy);
 }
 

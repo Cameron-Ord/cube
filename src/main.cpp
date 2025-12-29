@@ -5,6 +5,7 @@
 #include "window/window.hpp"
 #include "renderer/renderer.hpp"
 #include <SDL3/SDL.h>
+#include <cmath>
 
 static bool init_sdl(void);
 static void quit_sdl(void);
@@ -39,7 +40,7 @@ int main(int argc, char **argv){
   stream.pause_audio();
   
   strvec::iterator entry_iterator = entries.entry_paths.begin();
-  std::unique_ptr<audio_data> data = std::make_unique<audio_data>(vecf32(), vecf64(), meta_data(0, 0, 0, 0), false);
+  std::unique_ptr<audio_data> data = std::make_unique<audio_data>(nullptr, vecf64(), meta_data(0, 0, 0, 0), false);
   const char *path = (*entry_iterator).c_str();
   *data = read_file(open_file(path));
 
@@ -85,17 +86,33 @@ int main(int argc, char **argv){
     indice4(3, 2, 6, 7)
   };
   std::vector<edge> edges = rend.make_edges(&indices);
+  std::vector<indice3> triangle_indices = rend.quad_to_triangle(&indices);
   transformer fft;
+  rythm_interpreter ri;
 
   SDL_ShowWindow(win.get_window());
   SDL_EnableScreenSaver();
-  const u32 frame_gate = 1000 / 60;
+
+  const f32 scale_default = 1.0f;
+  const f32 scale_high = 1.33f;
+  const f32 scale_low = 0.66;
+
+  const u32 FPS = 120;
+  // a = 1 - e(-t / time_constant)
+  const f32 alpha = 1.0 - exp(-1.0 / (FPS * 0.15));
+
+  const f32 smear_amount = 5.5f;
+  const f32 smooth_amount = 7.730f;
+
+  const u32 frame_gate = 1000 / FPS;
   bool running = true;
 
   //f32 dz = 0.0f;
   f32 angle = 0.0f;
   while(running){
     u64 start = SDL_GetTicks();
+    rend.colour(0, 0, 0, 255);
+    rend.clear();
 
     if(data->valid && data->meta.position >= data->meta.samples){
       stream.pause_audio();
@@ -105,14 +122,22 @@ int main(int argc, char **argv){
     }
 
     if(data->valid && data->meta.position < data->meta.samples){
-      fft.fft_exec(data->fft_in, data->meta.sample_rate);    
+      const f64 sum = fft.fft_exec(data->fft_in, data->meta.sample_rate);
+      ri.ema_update(ri.ema_calculate(sum, alpha));
+      if(ri.is_more(sum)){
+       ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_high, ri.smoothed_scale, smooth_amount, FPS));
+       ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, smear_amount, FPS));
+      } else if (ri.is_less(sum)) {
+       ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_low, ri.smoothed_scale, smooth_amount, FPS));
+       ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, smear_amount, FPS));
+      } else {
+       ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_default, ri.smoothed_scale, smooth_amount, FPS));
+       ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, smear_amount, FPS));
+      }
     }
 
     //dz += 1.0f * (1.0f / 60);
-    angle += PI*(1.0f/60);
-
-    rend.colour(0, 0, 0, 255);
-    rend.clear();
+    angle += PI*(1.0f/FPS);
   
     SDL_Event event;
     while(SDL_PollEvent(&event)){
@@ -127,8 +152,13 @@ int main(int argc, char **argv){
   
     rend.colour(255, 255, 255, 255);
     std::vector<grid_pos> rotated = rend.rotate_vertices_xz(&vertices, angle);
-    std::vector<grid_pos> translated = rend.translate_vertices_z(&rotated, 1.0f);
-    rend.render_wire_frame(&edges, &translated);
+    std::vector<grid_pos> translated = rend.translate_vertices_z(&rotated, 0.75f);
+
+    rend.render_triangles(translated, triangle_indices, tri_spec(ri.smeared_scale, {120, 0, 233, 255}));
+    rend.render_triangles(translated, triangle_indices, tri_spec(ri.smoothed_scale, {0, 0, 255, 255}));
+    rend.render_wire_frame(&edges, &translated, ri.smoothed_scale);
+
+ //   rend.render_wire_frame(&edges, &translated, ri.smeared_scale);
     //rend.draw_points(&translated);
     rend.present();
 
@@ -138,7 +168,7 @@ int main(int argc, char **argv){
       u32 delay = static_cast<u32>(frame_gate - frame_time);
       SDL_Delay(delay);
     }
-  
+
   }
   
   stream.audio_device_close();

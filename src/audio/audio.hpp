@@ -31,9 +31,9 @@ struct meta_data {
 };
 
 struct audio_data {
-  audio_data(vecf32 audio, vecf64 in, meta_data m, bool is_valid) 
-    : buffer(audio), fft_in(in), meta(m), valid(is_valid)   {};
-  vecf32 buffer;
+  audio_data(unique_vecf32 audio, vecf64 in, meta_data m, bool is_valid) 
+    : buffer(std::move(audio)), fft_in(in), meta(m), valid(is_valid)   {};
+  unique_vecf32 buffer;
   vecf64 fft_in;
   meta_data meta;
   bool valid;

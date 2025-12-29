@@ -2,10 +2,10 @@
 #include <cstring>
 
 //Continously push to 2048 buffer
-static void fft_push(const u32 sample_count, const u32 offset, const vecf32 *src, vecf64 *dst){
-  if(sample_count > 0 && (src && dst)){
-    memmove(dst->data(), dst->data() + sample_count, (dst->size() - sample_count) * sizeof(f64));
-    memcpy(dst->data() + (dst->size() - sample_count), src->data() + offset, sample_count * sizeof(f64));
+static void fft_push(const u32 sample_count, const u32 offset, const unique_vecf32& src, vecf64& dst){
+  if(sample_count > 0 && src){
+    memmove(dst.data(), dst.data() + sample_count, (dst.size() - sample_count) * sizeof(f64));
+    memcpy(dst.data() + (dst.size() - sample_count), src->data() + offset, sample_count * sizeof(f64));
   }
 }
 
@@ -27,10 +27,10 @@ void get_callback(void *userdata, SDL_AudioStream *stream, int add, int total_am
       
       const u32 total = SDL_min(sample_amount, SDL_arraysize(samples));
       for(u32 i = 0; i < total && i + d->meta.position < d->meta.samples; i++){
-        samples[i] = d->buffer[i + d->meta.position];
+        samples[i] = (*d->buffer)[i + d->meta.position];
       }
       audio_stream_feed(stream, samples, total * sizeof(f32));
-      fft_push(total, d->meta.position, &d->buffer, &d->fft_in);
+      fft_push(total, d->meta.position, d->buffer, d->fft_in);
      
       d->meta.position += total;
       sample_amount -= total;
