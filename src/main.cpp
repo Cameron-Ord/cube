@@ -1,11 +1,11 @@
 #include "entries.hpp"
+#include "audio/fft.hpp"
 #include "util.hpp"
 #include "audio/audio.hpp"
 #include "window/window.hpp"
 #include "renderer/renderer.hpp"
 #include <SDL3/SDL.h>
 
-constexpr double PI = 3.14159265358979323846;
 static bool init_sdl(void);
 static void quit_sdl(void);
 
@@ -39,7 +39,7 @@ int main(int argc, char **argv){
   stream.pause_audio();
   
   strvec::iterator entry_iterator = entries.entry_paths.begin();
-  std::unique_ptr<audio_data> data = std::make_unique<audio_data>(vecf32(), vecf32(), meta_data(0, 0, 0, 0), false);
+  std::unique_ptr<audio_data> data = std::make_unique<audio_data>(vecf32(), vecf64(), meta_data(0, 0, 0, 0), false);
   const char *path = (*entry_iterator).c_str();
   *data = read_file(open_file(path));
 
@@ -85,6 +85,7 @@ int main(int argc, char **argv){
     indice4(3, 2, 6, 7)
   };
   std::vector<edge> edges = rend.make_edges(&indices);
+  transformer fft;
 
   SDL_ShowWindow(win.get_window());
   SDL_EnableScreenSaver();
@@ -101,6 +102,10 @@ int main(int argc, char **argv){
       entry_iterator = get_next_entry(strvec_view(entries.entry_paths, entry_iterator));
       *data = read_file(open_file(entry_iterator->c_str()));
       stream.resume_audio();
+    }
+
+    if(data->valid && data->meta.position < data->meta.samples){
+      fft.fft_exec(data->fft_in, data->meta.sample_rate);    
     }
 
     //dz += 1.0f * (1.0f / 60);

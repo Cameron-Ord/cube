@@ -8,6 +8,7 @@ SRCS += src/audio/read.cpp
 SRCS += src/audio/audio.cpp
 SRCS += src/entries.cpp
 SRCS += src/util.cpp
+SRCS += src/audio/fft.cpp
 
 CC = x86_64-w64-mingw32-g++
 LFLAGS = -lSDL3 -lm -lsndfile -mconsole

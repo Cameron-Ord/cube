@@ -2,10 +2,10 @@
 #include <cstring>
 
 //Continously push to 2048 buffer
-static void fft_push(const u32 sample_count, const u32 offset, const std::vector<f32> *src, std::vector<f32> *dst){
+static void fft_push(const u32 sample_count, const u32 offset, const vecf32 *src, vecf64 *dst){
   if(sample_count > 0 && (src && dst)){
-    memmove(dst->data(), dst->data() + sample_count, (dst->size() - sample_count) * sizeof(f32));
-    memcpy(dst->data() + (dst->size() - sample_count), src->data() + offset, sample_count * sizeof(f32));
+    memmove(dst->data(), dst->data() + sample_count, (dst->size() - sample_count) * sizeof(f64));
+    memcpy(dst->data() + (dst->size() - sample_count), src->data() + offset, sample_count * sizeof(f64));
   }
 }
 
@@ -43,7 +43,7 @@ bool audio_streambuffer::set_audio_callback(std::unique_ptr<audio_data>& userdat
 }
 
 SDL_AudioSpec audio_streambuffer::spec_from_file(std::unique_ptr<audio_data>& data){
-  return {SDL_AUDIO_F32, data->meta.channels, data->meta.samplerate};
+  return {SDL_AUDIO_F32, data->meta.channels, data->meta.sample_rate};
 }
 
 bool audio_streambuffer::spec_compare(const SDL_AudioSpec *original, const SDL_AudioSpec *updated){

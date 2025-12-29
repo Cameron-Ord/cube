@@ -5,7 +5,6 @@
 #include <memory>
 
 #define SAMPLES 128
-#define FFT_SIZE 2048
 
 void get_callback(void *userdata, SDL_AudioStream *stream, int add, int total);
 
@@ -13,29 +12,29 @@ typedef struct sf_private_tag SNDFILE;
 
 struct file_data {
   file_data(SNDFILE *opened, i32 fmt, i32 sr, i32 ch, i32 fr) 
-    : open(opened), format(fmt), samplerate(sr), channels(ch), frames(fr) {}
+    : open(opened), format(fmt), sample_rate(sr), channels(ch), frames(fr) {}
   SNDFILE *open;
   i32 format;
-  i32 samplerate;
+  i32 sample_rate;
   i32 channels;
   i32 frames;
 };
 
 struct meta_data {
   meta_data(i32 chans, i32 sr, i32 file_samples, i32 file_bytes) 
-    : channels(chans), samplerate(sr), samples(file_samples), bytes(file_bytes), position(0) {}
+    : channels(chans), sample_rate(sr), samples(file_samples), bytes(file_bytes), position(0) {}
   i32 channels;
-  i32 samplerate;
+  i32 sample_rate;
   u32 samples;
   u32 bytes;
   u32 position;
 };
 
 struct audio_data {
-  audio_data(vecf32 audio, vecf32 in, meta_data m, bool is_valid) 
+  audio_data(vecf32 audio, vecf64 in, meta_data m, bool is_valid) 
     : buffer(audio), fft_in(in), meta(m), valid(is_valid)   {};
   vecf32 buffer;
-  vecf32 fft_in;
+  vecf64 fft_in;
   meta_data meta;
   bool valid;
 };

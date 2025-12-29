@@ -17,3 +17,4 @@ typedef double f64;
 
 using strvec = std::vector<std::string>;
 using vecf32 = std::vector<f32>;
+using vecf64 = std::vector<f64>;
