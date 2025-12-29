@@ -37,7 +37,7 @@ int main(int argc, char **argv){
   stream.pause_audio();
   
   strvec::iterator entry_iterator = entries.entry_paths.begin();
-  audio_data *data = new audio_data(nullptr, 0, 0, 0, 0);
+  std::unique_ptr<audio_data> data = std::make_unique<audio_data>(vecf32(), vecf32(), 0, 0, 0, 0);
   {
     const char *path = (*entry_iterator).c_str();
     *data = read_file(open_file(path));
@@ -84,7 +84,6 @@ int main(int argc, char **argv){
     indice4(0, 4, 5, 1), 
     indice4(3, 2, 6, 7)
   };
-
   std::vector<edge> edges = rend.make_edges(&indices);
 
   SDL_ShowWindow(win.get_window());

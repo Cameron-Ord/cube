@@ -3,31 +3,46 @@
 #include <iostream>
 //This is all untested and im doing my best to interpret the docs
 
+static void fft_push(const u32 sample_count, const u32 offset, const std::vector<f32> *src, std::vector<f32> *dst){
+  if(sample_count > 0 && (src && dst)){
+    memmove(dst->data(), dst->data() + sample_count, sample_count * sizeof(f32));
+    memcpy(dst->data() + sample_count, src->data() + offset, sample_count * sizeof(f32));
+  }
+}
+
+static bool audio_stream_feed(SDL_AudioStream *stream, const f32 samples[], size_t bytes){
+  return SDL_PutAudioStreamData(stream, samples, bytes);
+}
+
 void get_callback(void *userdata, SDL_AudioStream *stream, int add, int total_amount){
   audio_data *d = static_cast<audio_data*>(userdata);
   if(d->position >= d->samples){
     return;
   }
-
-  i32 sample_amount = add / sizeof(f32);
-  while(sample_amount > 0){
-    f32 samples[128];
-    memset(&samples, 0, 128 * sizeof(f32));
-    const u32 total = SDL_min(sample_amount, SDL_arraysize(samples));
-    for(u32 i = 0; i < total && i + d->position < d->samples; i++){
-      samples[i] = (*d->buffer)[i + d->position];
+  if(d){
+    i32 sample_amount = add / sizeof(f32);
+    while(sample_amount > 0){
+      f32 samples[SAMPLES];
+      memset(&samples, 0, SAMPLES * sizeof(f32));
+      
+      const u32 total = SDL_min(sample_amount, SDL_arraysize(samples));
+      for(u32 i = 0; i < total && i + d->position < d->samples; i++){
+        samples[i] = d->buffer[i + d->position];
+      }
+      audio_stream_feed(stream, samples, total * sizeof(f32));
+      fft_push(total, d->position, &d->buffer, &d->fft_in);
+     
+      d->position += total;
+      sample_amount -= total;
     }
-    SDL_PutAudioStreamData(stream, samples, total * sizeof(f32));
-    d->position += total;
-    sample_amount -= total;
   }
 }
 
-bool audio_streambuffer::set_audio_callback(audio_data *userdata){
-  return SDL_SetAudioStreamGetCallback(stream, get_callback, userdata);
+bool audio_streambuffer::set_audio_callback(std::unique_ptr<audio_data>& userdata){
+  return SDL_SetAudioStreamGetCallback(stream, get_callback, userdata.get());
 }
 
-SDL_AudioSpec audio_streambuffer::spec_from_file(const audio_data *data){
+SDL_AudioSpec audio_streambuffer::spec_from_file(std::unique_ptr<audio_data>& data){
   return {SDL_AUDIO_F32, data->channels, data->samplerate};
 }
 

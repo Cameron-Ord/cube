@@ -29,13 +29,13 @@ audio_data read_file(file_data file){
   
   const u32 samples = file.frames * file.channels;
   const u32 bytes = samples * sizeof(f32);
-
-  std::shared_ptr<std::vector<f32>> buffer = std::make_shared<std::vector<f32>>(samples);
-  if(sf_read_float(file.open, buffer->data(), samples) < 0){
+  
+  std::vector<f32> buffer = std::vector<f32>(samples);
+  if(sf_read_float(file.open, buffer.data(), samples) < 0){
     log_write_str("Error while reading audio chunks:", sf_strerror(file.open));
     sf_close(file.open);
-    return audio_data(nullptr, 0, 0, 0, 0);
+    return audio_data(std::vector<f32>(), std::vector<f32>(), 0, 0, 0, 0);
   }
   sf_close(file.open);
-  return audio_data(buffer, file.channels, file.samplerate, samples, bytes);
+  return audio_data(buffer, std::vector<f32>(FFT_SIZE), file.channels, file.samplerate, samples, bytes);
 }

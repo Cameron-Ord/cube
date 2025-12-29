@@ -16,3 +16,4 @@ typedef float f32;
 typedef double f64;
 
 using strvec = std::vector<std::string>;
+using vecf32 = std::vector<f32>;

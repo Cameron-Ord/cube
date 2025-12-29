@@ -5,6 +5,9 @@
 #include <vector>
 #include <memory>
 
+#define SAMPLES 128
+#define FFT_SIZE 512
+
 void get_callback(void *userdata, SDL_AudioStream *stream, int add, int total);
 
 typedef struct sf_private_tag SNDFILE;
@@ -20,9 +23,10 @@ struct file_data {
 };
 
 struct audio_data {
-  audio_data(std::shared_ptr<std::vector<f32>> audio, i32 file_channels, i32 file_sr, u32 file_samples, u32 file_bytes) 
-    : buffer(audio), channels(file_channels), samplerate(file_sr), samples(file_samples), bytes(file_bytes), position(0)   {};
-  std::shared_ptr<std::vector<f32>> buffer;
+  audio_data(std::vector<f32> audio, std::vector<f32> in, i32 file_channels, i32 file_sr, u32 file_samples, u32 file_bytes) 
+    : buffer(audio), fft_in(in), channels(file_channels), samplerate(file_sr), samples(file_samples), bytes(file_bytes), position(0)   {};
+  std::vector<f32> buffer;
+  std::vector<f32> fft_in;
   i32 channels;
   i32 samplerate;
   u32 samples;
@@ -33,35 +37,33 @@ struct audio_data {
 file_data open_file(const char *path);
 audio_data read_file(file_data file);
 
-class audio_streambuffer{
-  public:
-    audio_streambuffer() : stream(nullptr), output_spec({SDL_AUDIO_F32, 2, 44100}), device_id(0) {}
-    ~audio_streambuffer() = default;
+struct audio_streambuffer{
+  audio_streambuffer() : stream(nullptr), output_spec({SDL_AUDIO_F32, 2, 44100}), device_id(0) {}
+  ~audio_streambuffer() = default;
 
-    u32 open_device(void);
-    u32 get_device_id(void) { return device_id; }
-    bool set_audio_callback(audio_data *userdata);
-    
-    bool audio_stream_bind(void);
-    bool query_device_format(SDL_AudioSpec *dst);
+  bool retrieve_next_file(std::unique_ptr<audio_data>& data);
 
-    bool spec_compare(const SDL_AudioSpec *original, const SDL_AudioSpec *updated);
-    SDL_AudioSpec spec_from_file(const audio_data *data);
-    SDL_AudioStream *create_stream(SDL_AudioSpec input_spec);
-    SDL_AudioStream *get_stream_ptr(void) { return stream; }
+  u32 open_device(void);
+  bool set_audio_callback(std::unique_ptr<audio_data>& data);
+ 
+  bool audio_stream_bind(void);
+  bool query_device_format(SDL_AudioSpec *dst);
 
-    void pause_audio(void);
-    void resume_audio(void);
-    void stream_destroy(void);
+  bool spec_compare(const SDL_AudioSpec *original, const SDL_AudioSpec *updated);
+  SDL_AudioSpec spec_from_file(std::unique_ptr<audio_data>& data);
+  SDL_AudioStream *create_stream(SDL_AudioSpec input_spec);
 
-    void audio_device_close(void);
-    void stream_unbind(void);
-    bool set_stream_ptr(SDL_AudioStream *sptr) { if(!sptr) { return false; } stream = sptr; return true;  }
-    bool set_device_id(u32 id) { if(!id) { return false; } device_id = id; return true; }
+  void pause_audio(void);
+  void resume_audio(void);
+  void stream_destroy(void);
 
-  private:
-    SDL_AudioStream *stream;
-    SDL_AudioSpec output_spec;
-    u32 device_id;
+  void audio_device_close(void);
+  void stream_unbind(void);
+  bool set_stream_ptr(SDL_AudioStream *sptr) { if(!sptr) { return false; } stream = sptr; return true;  }
+  bool set_device_id(u32 id) { if(!id) { return false; } device_id = id; return true; }
+
+  SDL_AudioStream *stream;
+  SDL_AudioSpec output_spec;
+  u32 device_id;
 };
 
