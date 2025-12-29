@@ -1,14 +1,14 @@
 #include "audio.hpp"
 #include <cstring>
-#include <iostream>
-//This is all untested and im doing my best to interpret the docs
 
+//Continously push to 2048 buffer
 static void fft_push(const u32 sample_count, const u32 offset, const std::vector<f32> *src, std::vector<f32> *dst){
   if(sample_count > 0 && (src && dst)){
-    memmove(dst->data(), dst->data() + sample_count, sample_count * sizeof(f32));
-    memcpy(dst->data() + sample_count, src->data() + offset, sample_count * sizeof(f32));
+    memmove(dst->data(), dst->data() + sample_count, (dst->size() - sample_count) * sizeof(f32));
+    memcpy(dst->data() + (dst->size() - sample_count), src->data() + offset, sample_count * sizeof(f32));
   }
 }
+
 
 static bool audio_stream_feed(SDL_AudioStream *stream, const f32 samples[], size_t bytes){
   return SDL_PutAudioStreamData(stream, samples, bytes);
@@ -16,23 +16,23 @@ static bool audio_stream_feed(SDL_AudioStream *stream, const f32 samples[], size
 
 void get_callback(void *userdata, SDL_AudioStream *stream, int add, int total_amount){
   audio_data *d = static_cast<audio_data*>(userdata);
-  if(d->position >= d->samples){
+  if(d->meta.position >= d->meta.samples){
     return;
   }
-  if(d){
+  if(d && d->valid){
     i32 sample_amount = add / sizeof(f32);
     while(sample_amount > 0){
       f32 samples[SAMPLES];
       memset(&samples, 0, SAMPLES * sizeof(f32));
       
       const u32 total = SDL_min(sample_amount, SDL_arraysize(samples));
-      for(u32 i = 0; i < total && i + d->position < d->samples; i++){
-        samples[i] = d->buffer[i + d->position];
+      for(u32 i = 0; i < total && i + d->meta.position < d->meta.samples; i++){
+        samples[i] = d->buffer[i + d->meta.position];
       }
       audio_stream_feed(stream, samples, total * sizeof(f32));
-      fft_push(total, d->position, &d->buffer, &d->fft_in);
+      fft_push(total, d->meta.position, &d->buffer, &d->fft_in);
      
-      d->position += total;
+      d->meta.position += total;
       sample_amount -= total;
     }
   }
@@ -43,7 +43,7 @@ bool audio_streambuffer::set_audio_callback(std::unique_ptr<audio_data>& userdat
 }
 
 SDL_AudioSpec audio_streambuffer::spec_from_file(std::unique_ptr<audio_data>& data){
-  return {SDL_AUDIO_F32, data->channels, data->samplerate};
+  return {SDL_AUDIO_F32, data->meta.channels, data->meta.samplerate};
 }
 
 bool audio_streambuffer::spec_compare(const SDL_AudioSpec *original, const SDL_AudioSpec *updated){
@@ -117,3 +117,4 @@ void audio_streambuffer::stream_destroy(void){
   if(stream)
     SDL_DestroyAudioStream(stream);
 }
+

@@ -1,4 +1,5 @@
-#include "sys.hpp"
+#include "entries.hpp"
+#include "util.hpp"
 #include "audio/audio.hpp"
 #include "window/window.hpp"
 #include "renderer/renderer.hpp"
@@ -16,16 +17,17 @@ int main(int argc, char **argv){
     return 1;
   }
 
-  contents entries = contents(strvec(), strvec(), false, true);
+  contents entries = contents(strvec(0), strvec(0), false, true);
   if(argc > 1 && argc < 3){
     std::string dir = std::string(argv[1]);
     entries = get_directory_contents(dir);
   } else {
     std::cout << "Usage: sv relative/path/to/directory" << std::endl;
+    return 0;
   }
 
-  if(!entries.valid){
-    log_write_str("Entries marked invalid", "");
+  if(!entries.valid || entries.empty){
+    log_write_str("Entries marked invalid or empty", "");
     return 1;
   }
 
@@ -37,11 +39,9 @@ int main(int argc, char **argv){
   stream.pause_audio();
   
   strvec::iterator entry_iterator = entries.entry_paths.begin();
-  std::unique_ptr<audio_data> data = std::make_unique<audio_data>(vecf32(), vecf32(), 0, 0, 0, 0);
-  {
-    const char *path = (*entry_iterator).c_str();
-    *data = read_file(open_file(path));
-  }
+  std::unique_ptr<audio_data> data = std::make_unique<audio_data>(vecf32(), vecf32(), meta_data(0, 0, 0, 0), false);
+  const char *path = (*entry_iterator).c_str();
+  *data = read_file(open_file(path));
 
   if(!stream.set_stream_ptr(stream.create_stream(stream.spec_from_file(data)))){
     log_write_str("Failed create audio stream:", SDL_GetError());
@@ -95,17 +95,12 @@ int main(int argc, char **argv){
   f32 angle = 0.0f;
   while(running){
     u64 start = SDL_GetTicks();
-    //yes sloppy but its just for testing
-    if(data->position >= data->samples){
+
+    if(data->valid && data->meta.position >= data->meta.samples){
       stream.pause_audio();
-      strvec::iterator next_entry = std::next(entry_iterator);
-      if(next_entry == entries.entry_paths.end()){
-        next_entry = entries.entry_paths.begin();
-      }
-      const char *path = (*next_entry).c_str();
-      *data = read_file(open_file(path));
+      entry_iterator = get_next_entry(strvec_view(entries.entry_paths, entry_iterator));
+      *data = read_file(open_file(entry_iterator->c_str()));
       stream.resume_audio();
-      entry_iterator++;
     }
 
     //dz += 1.0f * (1.0f / 60);

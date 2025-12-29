@@ -1,17 +1,8 @@
 #include <filesystem>
 #include <iostream>
-#include <fstream>
-#include "sys.hpp"
+#include "util.hpp"
+#include "entries.hpp"
 
-void log_write_str(std::string msg, std::string err){
-  std::ofstream file("log.txt");
-  if(!file){
-    std::cerr << "Failed to open file" << std::endl;
-  }
-
-  file << msg << " " << err << '\n';
-  file.close();
-}
 
 contents get_directory_contents(const std::string& path){
   strvec epaths(0), enames(0);
@@ -34,4 +25,10 @@ contents get_directory_contents(const std::string& path){
   return contents(epaths, enames, is_valid, is_empty);
 }
 
-
+strvec::iterator get_next_entry(strvec_view iter){
+  strvec::iterator next_entry = std::next(iter.current);
+  if(next_entry == iter.end){
+    next_entry = iter.start;
+  }
+  return next_entry;
+}

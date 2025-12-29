@@ -6,7 +6,8 @@ SRCS += src/window/window.cpp
 SRCS += src/renderer/renderer.cpp
 SRCS += src/audio/read.cpp
 SRCS += src/audio/audio.cpp
-SRCS += src/sys.cpp
+SRCS += src/entries.cpp
+SRCS += src/util.cpp
 
 CC = x86_64-w64-mingw32-g++
 LFLAGS = -lSDL3 -lm -lsndfile -mconsole

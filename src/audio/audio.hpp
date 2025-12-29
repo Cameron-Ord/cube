@@ -2,11 +2,10 @@
 
 #include "../alias.hpp"
 #include <SDL3/SDL_audio.h>
-#include <vector>
 #include <memory>
 
 #define SAMPLES 128
-#define FFT_SIZE 512
+#define FFT_SIZE 2048
 
 void get_callback(void *userdata, SDL_AudioStream *stream, int add, int total);
 
@@ -22,16 +21,23 @@ struct file_data {
   i32 frames;
 };
 
-struct audio_data {
-  audio_data(std::vector<f32> audio, std::vector<f32> in, i32 file_channels, i32 file_sr, u32 file_samples, u32 file_bytes) 
-    : buffer(audio), fft_in(in), channels(file_channels), samplerate(file_sr), samples(file_samples), bytes(file_bytes), position(0)   {};
-  std::vector<f32> buffer;
-  std::vector<f32> fft_in;
+struct meta_data {
+  meta_data(i32 chans, i32 sr, i32 file_samples, i32 file_bytes) 
+    : channels(chans), samplerate(sr), samples(file_samples), bytes(file_bytes), position(0) {}
   i32 channels;
   i32 samplerate;
   u32 samples;
   u32 bytes;
   u32 position;
+};
+
+struct audio_data {
+  audio_data(vecf32 audio, vecf32 in, meta_data m, bool is_valid) 
+    : buffer(audio), fft_in(in), meta(m), valid(is_valid)   {};
+  vecf32 buffer;
+  vecf32 fft_in;
+  meta_data meta;
+  bool valid;
 };
 
 file_data open_file(const char *path);
@@ -40,8 +46,6 @@ audio_data read_file(file_data file);
 struct audio_streambuffer{
   audio_streambuffer() : stream(nullptr), output_spec({SDL_AUDIO_F32, 2, 44100}), device_id(0) {}
   ~audio_streambuffer() = default;
-
-  bool retrieve_next_file(std::unique_ptr<audio_data>& data);
 
   u32 open_device(void);
   bool set_audio_callback(std::unique_ptr<audio_data>& data);

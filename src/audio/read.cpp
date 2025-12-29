@@ -1,5 +1,5 @@
 #include "audio.hpp"
-#include "../sys.hpp"
+#include "../util.hpp"
 #include <sndfile.h>
 #include <iostream>
 #include <cstring>
@@ -34,8 +34,8 @@ audio_data read_file(file_data file){
   if(sf_read_float(file.open, buffer.data(), samples) < 0){
     log_write_str("Error while reading audio chunks:", sf_strerror(file.open));
     sf_close(file.open);
-    return audio_data(std::vector<f32>(), std::vector<f32>(), 0, 0, 0, 0);
+    return audio_data(vecf32(), vecf32(), meta_data(0, 0, 0, 0), false);
   }
   sf_close(file.open);
-  return audio_data(buffer, std::vector<f32>(FFT_SIZE), file.channels, file.samplerate, samples, bytes);
+  return audio_data(buffer, vecf32(FFT_SIZE), meta_data(file.channels, file.samplerate, samples, bytes), true);
 }
