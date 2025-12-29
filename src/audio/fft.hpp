@@ -28,13 +28,14 @@ struct transformer {
 };
 
 struct rythm_interpreter {
-  rythm_interpreter(void) : avg(0.0), smoothed_scale(1.0f), smeared_scale(1.0f) {}
+  rythm_interpreter(void) : avg(0.0), smoothed_scale(0.0f), smeared_scale(0.0f), inverse_scale(0.0) {}
   f64 avg;
   f32 smoothed_scale;
   f32 smeared_scale;
+  f32 inverse_scale;
 
   void interpolate_apply(f32& interpolated, f32 scale) { interpolated += scale; }
-  f32 scale_interpolate(const f32& target_scale, const f32& prev, const f32& smoothing_amount, const i32& fps);
+  f32 scale_interpolate(const f32& target_scale, const f32& prev, const f32& alpha);
   bool is_less(const f64& sum); 
   bool is_more(const f64& sum);
   void ema_update(f64 averaged) { avg = averaged; }

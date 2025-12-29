@@ -94,15 +94,13 @@ int main(int argc, char **argv){
   SDL_EnableScreenSaver();
 
   const f32 scale_default = 1.0f;
-  const f32 scale_high = 1.33f;
-  const f32 scale_low = 0.66;
+  const f32 scale_high = 1.5f;
+  const f32 scale_low = 0.5;
 
   const u32 FPS = 120;
   // a = 1 - e(-t / time_constant)
-  const f32 alpha = 1.0 - exp(-1.0 / (FPS * 0.15));
-
-  const f32 smear_amount = 5.5f;
-  const f32 smooth_amount = 7.730f;
+  const f32 ema_alpha = 1.0 - exp(-1.0 / (FPS * 0.10));
+  const f32 frame_alpha = 1.0 - exp(-1.0 / (FPS * 0.15));
 
   const u32 frame_gate = 1000 / FPS;
   bool running = true;
@@ -123,17 +121,17 @@ int main(int argc, char **argv){
 
     if(data->valid && data->meta.position < data->meta.samples){
       const f64 sum = fft.fft_exec(data->fft_in, data->meta.sample_rate);
-      ri.ema_update(ri.ema_calculate(sum, alpha));
+      ri.ema_update(ri.ema_calculate(sum, ema_alpha));
       if(ri.is_more(sum)){
-       ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_high, ri.smoothed_scale, smooth_amount, FPS));
-       ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, smear_amount, FPS));
+       ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_high, ri.smoothed_scale, frame_alpha));
+       ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, frame_alpha));
       } else if (ri.is_less(sum)) {
-       ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_low, ri.smoothed_scale, smooth_amount, FPS));
-       ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, smear_amount, FPS));
+       ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_low, ri.smoothed_scale, frame_alpha));
+       ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, frame_alpha));
       } else {
-       ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_default, ri.smoothed_scale, smooth_amount, FPS));
-       ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, smear_amount, FPS));
-      }
+       ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_default, ri.smoothed_scale, frame_alpha));
+       ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, frame_alpha));
+     }
     }
 
     //dz += 1.0f * (1.0f / 60);
@@ -150,15 +148,12 @@ int main(int argc, char **argv){
       }
     }
   
-    rend.colour(255, 255, 255, 255);
     std::vector<grid_pos> rotated = rend.rotate_vertices_xz(&vertices, angle);
     std::vector<grid_pos> translated = rend.translate_vertices_z(&rotated, 0.75f);
 
     rend.render_triangles(translated, triangle_indices, tri_spec(ri.smeared_scale, {120, 0, 233, 255}));
     rend.render_triangles(translated, triangle_indices, tri_spec(ri.smoothed_scale, {0, 0, 255, 255}));
-    rend.render_wire_frame(&edges, &translated, ri.smoothed_scale);
-
- //   rend.render_wire_frame(&edges, &translated, ri.smeared_scale);
+    rend.render_wire_frame(&edges, &translated, tri_spec(ri.smoothed_scale, {120, 0, 233, 255}));
     //rend.draw_points(&translated);
     rend.present();
 

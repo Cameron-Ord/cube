@@ -76,7 +76,7 @@ class renderer {
     veci32 indice3_flatten(const std::vector<indice3>& indices);
 
     void render_triangles(const std::vector<grid_pos>& vertices, const std::vector<indice3>& indices, const tri_spec spec);
-    void render_wire_frame(const std::vector<edge> *edges, const std::vector<grid_pos> *vertices, f32 scale);
+    void render_wire_frame(const std::vector<edge> *edges, const std::vector<grid_pos> *vertices, const tri_spec spec);
     void set_point(scr_pos p);
     void draw_points(const std::vector<grid_pos> *vertices);
     void set_renderer(SDL_Renderer *ptr) { r = ptr; }

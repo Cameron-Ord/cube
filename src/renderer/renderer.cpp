@@ -131,14 +131,15 @@ std::vector<grid_pos> renderer::translate_vertices_z(const std::vector<grid_pos>
 }
 
 
-void renderer::render_wire_frame(const std::vector<edge> *edges, const std::vector<grid_pos> *vertices, f32 scale){
+void renderer::render_wire_frame(const std::vector<edge> *edges, const std::vector<grid_pos> *vertices, const tri_spec spec){
+  colour(spec.colour.r, spec.colour.g, spec.colour.b, spec.colour.a);
   for(size_t i = 0; i < edges->size(); i++){
     const edge *e = &(*edges)[i];
     grid_pos v0 = (*vertices)[e->x];
     grid_pos v1 = (*vertices)[e->y];
 
-    scr_pos p0 = to_screen(project(v0, scale));
-    scr_pos p1 = to_screen(project(v1, scale));
+    scr_pos p0 = to_screen(project(v0, spec.scale));
+    scr_pos p1 = to_screen(project(v1, spec.scale));
 
     SDL_RenderLine(r, p0.x, p0.y, p1.x, p1.y);
   }

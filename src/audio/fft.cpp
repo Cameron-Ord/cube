@@ -170,8 +170,8 @@ f64 transformer::bass_freq_sum(const i32 sample_rate){
   return sqrt(mean);
 }
 
-f32 rythm_interpreter::scale_interpolate(const f32& target_scale, const f32& prev, const f32& smoothing_amount, const i32& fps){
-  return (target_scale - prev) * smoothing_amount * (1.0f / fps);
+f32 rythm_interpreter::scale_interpolate(const f32& target_scale, const f32& prev, const f32& alpha){
+  return (target_scale - prev) *  alpha;
 }
 
  //f64 transformer::linear_smooth(f64 base, f64 sm, i32 amt, i32 frames)
