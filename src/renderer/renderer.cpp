@@ -3,7 +3,6 @@
 #include <SDL3/SDL.h>
 #include <cmath>
 
-const SDL_FColor base = {255, 255, 255, 255};
 
 SDL_Renderer *renderer::create(SDL_Window *w){
   SDL_Renderer *tmp = SDL_CreateRenderer(w, dname);
@@ -41,11 +40,11 @@ void renderer::render_triangles(const std::vector<grid_pos>& vertices, const std
   SDL_RenderGeometry(r, nullptr, sdl_vertices.data(), nvertices, flat_indices.data(), nindices);
 }
 
-std::vector<SDL_Vertex> renderer::vertices_convert_sdl_vertex(const std::vector<grid_pos>& vertices, const tri_spec& spec){
+std::vector<SDL_Vertex> renderer::vertices_convert_sdl_vertex(const std::vector<grid_pos>& vertices, const tri_spec spec){
   std::vector<SDL_Vertex> conv;
   for(auto it = vertices.begin(); it != vertices.end(); it++){
     scr_pos pos = to_screen(project(*it, spec.scale));
-    conv.push_back({{pos.x, pos.y}, spec.colour, {0,0}});
+    conv.push_back({{pos.x, pos.y }, spec.colour, {0,0}});
   }
   return conv;
 }
@@ -114,12 +113,28 @@ void renderer::draw_points(const std::vector<grid_pos> *vertices){
   }
 }
 
+std::vector<grid_pos> renderer::rotate_vertices_yz(const std::vector<grid_pos> *vertices, f32 angle){
+  std::vector<grid_pos> rotated = std::vector<grid_pos>(*vertices);
+  for(size_t i = 0; i < vertices->size(); i++){
+    rotated[i] = rotate_yz((*vertices)[i], angle);
+  }
+  return rotated;
+}
+
 std::vector<grid_pos> renderer::rotate_vertices_xz(const std::vector<grid_pos> *vertices, f32 angle){
   std::vector<grid_pos> rotated = std::vector<grid_pos>(*vertices);
   for(size_t i = 0; i < vertices->size(); i++){
     rotated[i] = rotate_xz((*vertices)[i], angle);
   }
   return rotated;
+}
+
+std::vector<grid_pos> renderer::translate_vertices_x(const std::vector<grid_pos> *vertices, f32 dx){
+  std::vector<grid_pos> translated = std::vector<grid_pos>(*vertices);
+  for(size_t i = 0; i < vertices->size(); i++){
+    translated[i] = translate_x((*vertices)[i], dx);
+  }
+  return translated;
 }
 
 std::vector<grid_pos> renderer::translate_vertices_z(const std::vector<grid_pos> *vertices, f32 dz){

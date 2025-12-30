@@ -1,5 +1,5 @@
 #pragma once
-
+#include <array>
 #include "../alias.hpp"
 
 #define FFT_SIZE 4096
@@ -16,9 +16,10 @@ struct transformer {
   vec_compf64 output;
   vecf64 amplitudes;
   vecf64 hamming_values;
-  f64 bass_freq_sum(const i32 sample_rate);
+
+  f64 freq_range_sum(const f32 MAX_FREQ, const f32 MIN_FREQ, const i32 sample_rate);
   void compf_to_float(void);
-  f64 fft_exec(const vecf64& fft_in, const i32 sample_rate);
+  vecf64 fft_exec(const vecf64& fft_in, const i32 sample_rate);
   size_t bit_reverse(size_t index, size_t log2n);
   void iterative_fft(vecf64& fft_in);
   void hamming_window(vecf64& fft_in);
@@ -42,3 +43,10 @@ struct rythm_interpreter {
   f64 ema_calculate(f64 sum, f64 alpha);
   void print_ema(f64 sum);
 };
+
+struct range_holder {
+  range_holder(void) : intrps(4), sums(4) {}
+  std::vector<rythm_interpreter> intrps;  
+  vecf64 sums;
+};
+

@@ -3,8 +3,18 @@
 #include "fft.hpp"
 #include <iostream>
 
-const f64 MAX_FREQ = 20000.0f;
-const f64 MIN_FREQ = 60.0f;
+const f64 BASS_MAX_FREQ = 20000.0f;
+const f64 BASS_MIN_FREQ = 60.0f;
+
+const f64 LOW_MID_MAX_FREQ = 500.0f;
+const f64 LOW_MID_MIN_FREQ = 250.0f;
+
+const f64 MID_MAX_FREQ = 2000.0f;
+const f64 MID_MIN_FREQ = 500.0f;
+
+const f64 HIGH_MID_MAX_FREQ = 4000.0f;
+const f64 HIGH_MID_MIN_FREQ = 2000.0f;
+
 const f64 THRESHOLD = 0.10f;
 
 
@@ -28,12 +38,17 @@ f64 rythm_interpreter::ema_calculate(f64 sum, f64 alpha){
   return alpha * sum + (1.0 - alpha) * avg; 
 }
 
-f64 transformer::fft_exec(const vecf64& fft_in, const i32 sample_rate){
+vecf64 transformer::fft_exec(const vecf64& fft_in, const i32 sample_rate){
   vecf64 samples = vecf64(fft_in);
   hamming_window(samples);
   iterative_fft(samples);
   compf_to_float();
-  return bass_freq_sum(sample_rate);
+  return vecf64 {
+      freq_range_sum(BASS_MAX_FREQ, BASS_MIN_FREQ, sample_rate), 
+      freq_range_sum(LOW_MID_MAX_FREQ, LOW_MID_MIN_FREQ, sample_rate),
+      freq_range_sum(MID_MAX_FREQ, MID_MIN_FREQ, sample_rate),
+      freq_range_sum(HIGH_MID_MAX_FREQ, HIGH_MID_MIN_FREQ, sample_rate)
+  };
 }
 
 static compf64 c_from_real(const f64 real)
@@ -159,7 +174,7 @@ void transformer::calculate_window(void)
     }
 }
 
-f64 transformer::bass_freq_sum(const i32 sample_rate){
+f64 transformer::freq_range_sum(const f32 MAX_FREQ, const f32 MIN_FREQ, const i32 sample_rate){
   const u32 bin_max = (MAX_FREQ * FFT_SIZE / sample_rate);
   const u32 bin_min = (MIN_FREQ * FFT_SIZE / sample_rate);
   f64 sum = 0.0;

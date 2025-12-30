@@ -56,7 +56,9 @@ class renderer {
     std::vector<indice3> quad_to_triangle(const std::vector<indice4> *indices);
     std::vector<edge> make_edges(const std::vector<indice4> *indices);
     std::vector<grid_pos> translate_vertices_z(const std::vector<grid_pos> *vertices, f32 dz);
+    std::vector<grid_pos> translate_vertices_x(const std::vector<grid_pos> *vertices, f32 dz);
     std::vector<grid_pos> rotate_vertices_xz(const std::vector<grid_pos> *vertices, f32 angle);
+    std::vector<grid_pos> rotate_vertices_yz(const std::vector<grid_pos> *vertices, f32 angle);
  
 
     grid_pos translate_z(grid_pos gpos, f32 inc);
@@ -72,7 +74,7 @@ class renderer {
     SDL_Renderer *create(SDL_Window *w);
     
 
-    std::vector<SDL_Vertex> vertices_convert_sdl_vertex(const std::vector<grid_pos>& vertices, const tri_spec& spec);
+    std::vector<SDL_Vertex> vertices_convert_sdl_vertex(const std::vector<grid_pos>& vertices, const tri_spec spec);
     veci32 indice3_flatten(const std::vector<indice3>& indices);
 
     void render_triangles(const std::vector<grid_pos>& vertices, const std::vector<indice3>& indices, const tri_spec spec);

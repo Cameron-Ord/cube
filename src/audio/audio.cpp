@@ -27,7 +27,7 @@ void get_callback(void *userdata, SDL_AudioStream *stream, int add, int total_am
       
       const u32 total = SDL_min(sample_amount, SDL_arraysize(samples));
       for(u32 i = 0; i < total && i + d->meta.position < d->meta.samples; i++){
-        samples[i] = (*d->buffer)[i + d->meta.position];
+        samples[i] = (*d->buffer)[i + d->meta.position] * 0.1f;
       }
       audio_stream_feed(stream, samples, total * sizeof(f32));
       fft_push(total, d->meta.position, d->buffer, d->fft_in);

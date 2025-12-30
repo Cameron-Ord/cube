@@ -7,6 +7,8 @@
 #include <SDL3/SDL.h>
 #include <cmath>
 
+const SDL_Color background = { 76 , 86 , 106 , 255  };
+
 static bool init_sdl(void);
 static void quit_sdl(void);
 
@@ -66,15 +68,15 @@ int main(int argc, char **argv){
   rend.set_renderer(rend.create(win.get_window()));
 
   std::vector<grid_pos> vertices = {
-    grid_pos(0.25f, 0.25f, 0.25f), 
-    grid_pos(-0.25f, 0.25f, 0.25f),
-    grid_pos(-0.25f, -0.25f, 0.25f),
-    grid_pos(0.25f, -0.25f, 0.25f),
+    grid_pos(0.5f, 0.5f, 0.5f), 
+    grid_pos(-0.5f, 0.5f, 0.5f),
+    grid_pos(-0.5f, -0.5f, 0.5f),
+    grid_pos(0.5f, -0.5f, 0.5f),
 
-    grid_pos(0.25f, 0.25f, -0.25f), 
-    grid_pos(-0.25f, 0.25f, -0.25),
-    grid_pos(-0.25f, -0.25f, -0.25f),
-    grid_pos(0.25f, -0.25f, -0.25f)
+    grid_pos(0.5f, 0.5f, -0.5f), 
+    grid_pos(-0.5f, 0.5f, -0.5f),
+    grid_pos(-0.5f, -0.5f, -0.5f),
+    grid_pos(0.5f, -0.5f, -0.5f)
   };
 
   std::vector<indice4> indices = {
@@ -88,7 +90,7 @@ int main(int argc, char **argv){
   std::vector<edge> edges = rend.make_edges(&indices);
   std::vector<indice3> triangle_indices = rend.quad_to_triangle(&indices);
   transformer fft;
-  rythm_interpreter ri;
+  range_holder ranges;
 
   SDL_ShowWindow(win.get_window());
   SDL_EnableScreenSaver();
@@ -97,7 +99,7 @@ int main(int argc, char **argv){
   const f32 scale_high = 1.5f;
   const f32 scale_low = 0.5;
 
-  const u32 FPS = 120;
+  const u32 FPS = 240;
   // a = 1 - e(-t / time_constant)
   const f32 ema_alpha = 1.0 - exp(-1.0 / (FPS * 0.10));
   const f32 frame_alpha = 1.0 - exp(-1.0 / (FPS * 0.15));
@@ -109,7 +111,7 @@ int main(int argc, char **argv){
   f32 angle = 0.0f;
   while(running){
     u64 start = SDL_GetTicks();
-    rend.colour(0, 0, 0, 255);
+    rend.colour(background.r, background.g, background.b, background.a);
     rend.clear();
 
     if(data->valid && data->meta.position >= data->meta.samples){
@@ -120,18 +122,23 @@ int main(int argc, char **argv){
     }
 
     if(data->valid && data->meta.position < data->meta.samples){
-      const f64 sum = fft.fft_exec(data->fft_in, data->meta.sample_rate);
-      ri.ema_update(ri.ema_calculate(sum, ema_alpha));
-      if(ri.is_more(sum)){
-       ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_high, ri.smoothed_scale, frame_alpha));
-       ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, frame_alpha));
-      } else if (ri.is_less(sum)) {
-       ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_low, ri.smoothed_scale, frame_alpha));
-       ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, frame_alpha));
-      } else {
-       ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_default, ri.smoothed_scale, frame_alpha));
-       ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, frame_alpha));
-     }
+      ranges.sums = fft.fft_exec(data->fft_in, data->meta.sample_rate);
+      for(size_t i = 0; i < 1; i++){
+        rythm_interpreter& ri = ranges.intrps[i];
+
+        ri.ema_update(ri.ema_calculate(ranges.sums[i], ema_alpha));
+        if(ri.is_more(ranges.sums[i])){
+          ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_high, ri.smoothed_scale, frame_alpha));
+          ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, frame_alpha));
+        } else if (ri.is_less(ranges.sums[i])){
+          ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_low, ri.smoothed_scale, frame_alpha));
+          ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, frame_alpha));
+        } else {
+          ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_default, ri.smoothed_scale, frame_alpha));
+          ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, frame_alpha));
+        }
+
+      }
     }
 
     //dz += 1.0f * (1.0f / 60);
@@ -148,12 +155,13 @@ int main(int argc, char **argv){
       }
     }
   
-    std::vector<grid_pos> rotated = rend.rotate_vertices_xz(&vertices, angle);
-    std::vector<grid_pos> translated = rend.translate_vertices_z(&rotated, 0.75f);
-
-    rend.render_triangles(translated, triangle_indices, tri_spec(ri.smeared_scale, {120, 0, 233, 255}));
-    rend.render_triangles(translated, triangle_indices, tri_spec(ri.smoothed_scale, {0, 0, 255, 255}));
-    rend.render_wire_frame(&edges, &translated, tri_spec(ri.smoothed_scale, {120, 0, 233, 255}));
+    std::vector<grid_pos> rotatedxz = rend.rotate_vertices_xz(&vertices, angle);
+    std::vector<grid_pos> rotatedyz = rend.rotate_vertices_yz(&rotatedxz, angle);
+    std::vector<grid_pos> ztranslated = rend.translate_vertices_z(&rotatedyz, 1.5f);
+    rend.render_triangles(ztranslated, triangle_indices, tri_spec(ranges.intrps[0].smeared_scale, {163.0f / 255.0f, 190 / 255.0f , 140 / 255.0f, 255/ 255.0f}));
+    rend.render_triangles(ztranslated, triangle_indices, tri_spec(ranges.intrps[0].smoothed_scale, {94.0f / 255.0f, 129 / 255.0f , 172 / 255.0f, 255/ 255.0f}));
+    
+    rend.render_wire_frame(&edges, &ztranslated, tri_spec(ranges.intrps[0].smoothed_scale, {163, 190, 140, 255}));
     //rend.draw_points(&translated);
     rend.present();
 
