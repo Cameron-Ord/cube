@@ -1,9 +1,9 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 typedef int8_t i8;
 typedef uint8_t u8;

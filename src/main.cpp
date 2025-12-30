@@ -1,27 +1,31 @@
-#include "entries.hpp"
-#include "audio/fft.hpp"
-#include "util.hpp"
 #include "audio/audio.hpp"
-#include "window/window.hpp"
+#include "audio/fft.hpp"
+#include "entries.hpp"
 #include "renderer/renderer.hpp"
+#include "util.hpp"
+#include "window/window.hpp"
 #include <SDL3/SDL.h>
 #include <cmath>
 
-const SDL_Color background = { 76 , 86 , 106 , 255  };
+const SDL_Color background = {76, 86, 106, 255};
+constexpr SDL_FColor smear_col = {163.0f / 255.0f, 190.0f / 255.0f,
+                                  140.0f / 255.0f, 255.0f / 255.0f};
+constexpr SDL_FColor box_col = {94.0f / 255.0f, 129.0f / 255.0f,
+                                172.0f / 255.0f, 255.0f / 255.0f};
 
 static bool init_sdl(void);
 static void quit_sdl(void);
 
 #include <iostream>
 
-int main(int argc, char **argv){
-  if(!init_sdl()){
+int main(int argc, char **argv) {
+  if (!init_sdl()) {
     log_write_str("Failed to initialize SDL3:", SDL_GetError());
     return 1;
   }
 
   contents entries = contents(strvec(0), strvec(0), false, true);
-  if(argc > 1 && argc < 3){
+  if (argc > 1 && argc < 3) {
     std::string dir = std::string(argv[1]);
     entries = get_directory_contents(dir);
   } else {
@@ -29,34 +33,36 @@ int main(int argc, char **argv){
     return 0;
   }
 
-  if(!entries.valid || entries.empty){
+  if (!entries.valid || entries.empty) {
     log_write_str("Entries marked invalid or empty", "");
     return 1;
   }
 
   audio_streambuffer stream;
-  if(!stream.set_device_id(stream.open_device())){
+  if (!stream.set_device_id(stream.open_device())) {
     log_write_str("Failed to open default audio device:", SDL_GetError());
     return 1;
   }
   stream.pause_audio();
-  
+
   strvec::iterator entry_iterator = entries.entry_paths.begin();
-  std::unique_ptr<audio_data> data = std::make_unique<audio_data>(nullptr, vecf64(), meta_data(0, 0, 0, 0), false);
+  std::unique_ptr<audio_data> data = std::make_unique<audio_data>(
+      nullptr, vecf64(), meta_data(0, 0, 0, 0), false);
   const char *path = (*entry_iterator).c_str();
   *data = read_file(open_file(path));
 
-  if(!stream.set_stream_ptr(stream.create_stream(stream.spec_from_file(data)))){
+  if (!stream.set_stream_ptr(
+          stream.create_stream(stream.spec_from_file(data)))) {
     log_write_str("Failed create audio stream:", SDL_GetError());
     return 1;
   }
 
-  if(!stream.set_audio_callback(data)){
-    log_write_str("Failed to assign audio get callback:", SDL_GetError()); 
+  if (!stream.set_audio_callback(data)) {
+    log_write_str("Failed to assign audio get callback:", SDL_GetError());
     return 1;
   }
 
-  if(!stream.audio_stream_bind()){
+  if (!stream.audio_stream_bind()) {
     log_write_str("Failed to bind stream to device:", SDL_GetError());
     return 1;
   }
@@ -68,27 +74,17 @@ int main(int argc, char **argv){
   rend.set_renderer(rend.create(win.get_window()));
 
   std::vector<grid_pos> vertices = {
-    grid_pos(0.5f, 0.5f, 0.5f), 
-    grid_pos(-0.5f, 0.5f, 0.5f),
-    grid_pos(-0.5f, -0.5f, 0.5f),
-    grid_pos(0.5f, -0.5f, 0.5f),
+      grid_pos(0.5f, 0.5f, 0.5f),    grid_pos(-0.5f, 0.5f, 0.5f),
+      grid_pos(-0.5f, -0.5f, 0.5f),  grid_pos(0.5f, -0.5f, 0.5f),
 
-    grid_pos(0.5f, 0.5f, -0.5f), 
-    grid_pos(-0.5f, 0.5f, -0.5f),
-    grid_pos(-0.5f, -0.5f, -0.5f),
-    grid_pos(0.5f, -0.5f, -0.5f)
-  };
+      grid_pos(0.5f, 0.5f, -0.5f),   grid_pos(-0.5f, 0.5f, -0.5f),
+      grid_pos(-0.5f, -0.5f, -0.5f), grid_pos(0.5f, -0.5f, -0.5f)};
 
-  std::vector<indice4> indices = {
-    indice4(0, 1, 2, 3),
-    indice4(4, 5, 6, 7),
-    indice4(1, 5, 6, 2),
-    indice4(0, 3, 7, 4),
-    indice4(0, 4, 5, 1), 
-    indice4(3, 2, 6, 7)
-  };
-  std::vector<edge> edges = rend.make_edges(&indices);
-  std::vector<indice3> triangle_indices = rend.quad_to_triangle(&indices);
+  std::vector<indice4> indices = {indice4(0, 1, 2, 3), indice4(4, 5, 6, 7),
+                                  indice4(1, 5, 6, 2), indice4(0, 3, 7, 4),
+                                  indice4(0, 4, 5, 1), indice4(3, 2, 6, 7)};
+  std::vector<edge> edges = rend.make_edges(indices);
+  std::vector<indice3> triangle_indices = rend.quad_to_triangle(indices);
   transformer fft;
   range_holder ranges;
 
@@ -107,86 +103,120 @@ int main(int argc, char **argv){
   const u32 frame_gate = 1000 / FPS;
   bool running = true;
 
-  //f32 dz = 0.0f;
+  // f32 dz = 0.0f;
   f32 angle = 0.0f;
-  while(running){
+  while (running) {
     u64 start = SDL_GetTicks();
     rend.colour(background.r, background.g, background.b, background.a);
     rend.clear();
 
-    if(data->valid && data->meta.position >= data->meta.samples){
+    if (data->valid && data->meta.position >= data->meta.samples) {
       stream.pause_audio();
-      entry_iterator = get_next_entry(strvec_view(entries.entry_paths, entry_iterator));
+      entry_iterator =
+          get_next_entry(strvec_view(entries.entry_paths, entry_iterator));
       *data = read_file(open_file(entry_iterator->c_str()));
       stream.resume_audio();
     }
 
-    if(data->valid && data->meta.position < data->meta.samples){
+    if (data->valid && data->meta.position < data->meta.samples) {
       ranges.sums = fft.fft_exec(data->fft_in, data->meta.sample_rate);
-      for(size_t i = 0; i < 1; i++){
-        rythm_interpreter& ri = ranges.intrps[i];
+      for (size_t i = 0; i < 4; i++) {
+        rythm_interpreter &ri = ranges.intrps[i];
 
         ri.ema_update(ri.ema_calculate(ranges.sums[i], ema_alpha));
-        if(ri.is_more(ranges.sums[i])){
-          ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_high, ri.smoothed_scale, frame_alpha));
-          ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, frame_alpha));
-        } else if (ri.is_less(ranges.sums[i])){
-          ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_low, ri.smoothed_scale, frame_alpha));
-          ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, frame_alpha));
+        if (ri.is_more(ranges.sums[i])) {
+          ri.interpolate_apply(
+              ri.smoothed_scale,
+              ri.scale_interpolate(scale_high, ri.smoothed_scale, frame_alpha));
+          ri.interpolate_apply(ri.smeared_scale,
+                               ri.scale_interpolate(ri.smoothed_scale,
+                                                    ri.smeared_scale,
+                                                    frame_alpha));
+        } else if (ri.is_less(ranges.sums[i])) {
+          ri.interpolate_apply(
+              ri.smoothed_scale,
+              ri.scale_interpolate(scale_low, ri.smoothed_scale, frame_alpha));
+          ri.interpolate_apply(ri.smeared_scale,
+                               ri.scale_interpolate(ri.smoothed_scale,
+                                                    ri.smeared_scale,
+                                                    frame_alpha));
         } else {
-          ri.interpolate_apply(ri.smoothed_scale, ri.scale_interpolate(scale_default, ri.smoothed_scale, frame_alpha));
-          ri.interpolate_apply(ri.smeared_scale, ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, frame_alpha));
+          ri.interpolate_apply(ri.smoothed_scale,
+                               ri.scale_interpolate(scale_default,
+                                                    ri.smoothed_scale,
+                                                    frame_alpha));
+          ri.interpolate_apply(ri.smeared_scale,
+                               ri.scale_interpolate(ri.smoothed_scale,
+                                                    ri.smeared_scale,
+                                                    frame_alpha));
         }
-
       }
     }
 
-    //dz += 1.0f * (1.0f / 60);
-    angle += PI*(1.0f/FPS);
-  
+    // dz += 1.0f * (1.0f / 60);
+    angle += PI * (1.0f / FPS);
+
     SDL_Event event;
-    while(SDL_PollEvent(&event)){
-      switch(event.type){
-        default: break;
+    while (SDL_PollEvent(&event)) {
+      switch (event.type) {
+      default:
+        break;
 
-        case SDL_EVENT_QUIT:
-            running = false;
-            break;
+      case SDL_EVENT_QUIT:
+        running = false;
+        break;
       }
     }
 
+    //YEP LGTM
 
-    std::vector<grid_pos> smear = rend.scale_vertices(vertices, ranges.intrps[0].smeared_scale);
-    std::vector<grid_pos> smooth = rend.scale_vertices(vertices, ranges.intrps[0].smoothed_scale);
-    
-    std::vector<grid_pos> smearz = rend.translate_vertices_z(&smear, 2.0f);
-    std::vector<grid_pos> smoothz = rend.translate_vertices_z(&smooth, 2.0f);
+    f32 p = -0.75f;
+    for (size_t i = 0; i < 4; i++) {
+      rend.render_triangles(
+          rend.translate_vertices_x(
+              rend.translate_vertices_z(
+                  rend.rotate_vertices_yz(
+                      rend.rotate_vertices_xz(
+                          rend.scale_vertices(
+                              vertices, ranges.intrps[i].smeared_scale * 0.25),
+                          angle),
+                      angle),
+                  1.75f),
+              p),
+          triangle_indices, smear_col);
+      rend.render_triangles(
+          rend.translate_vertices_x(
+              rend.translate_vertices_z(
+                  rend.rotate_vertices_yz(
+                      rend.rotate_vertices_xz(
+                          rend.scale_vertices(
+                              vertices, ranges.intrps[i].smoothed_scale * 0.25),
+                          angle),
+                      angle),
+                  1.75f),
+              p),
+          triangle_indices, box_col);
+      p += 0.5;
+    }
 
-    rend.render_triangles(smearz, triangle_indices, tri_spec(ranges.intrps[0].smeared_scale, {163.0f / 255.0f, 190 / 255.0f , 140 / 255.0f, 255/ 255.0f}));
-    rend.render_triangles(smoothz, triangle_indices, tri_spec(ranges.intrps[0].smoothed_scale, {94.0f / 255.0f, 129 / 255.0f , 172 / 255.0f, 255/ 255.0f}));
-    //rend.draw_points(&translated);
+    // rend.draw_points(&translated);
     rend.present();
 
-
     u64 frame_time = SDL_GetTicks() - start;
-    if(frame_time < frame_gate){
+    if (frame_time < frame_gate) {
       u32 delay = static_cast<u32>(frame_gate - frame_time);
       SDL_Delay(delay);
     }
-
   }
-  
+
   stream.audio_device_close();
   stream.stream_destroy();
   quit_sdl();
-	return 0;
+  return 0;
 }
 
-bool init_sdl(void){
+bool init_sdl(void) {
   return SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
 }
 
-void quit_sdl(void){
-  SDL_Quit();
-}
-
+void quit_sdl(void) { SDL_Quit(); }
