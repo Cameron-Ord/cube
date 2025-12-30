@@ -154,14 +154,16 @@ int main(int argc, char **argv){
             break;
       }
     }
-  
-    std::vector<grid_pos> rotatedxz = rend.rotate_vertices_xz(&vertices, angle);
-    std::vector<grid_pos> rotatedyz = rend.rotate_vertices_yz(&rotatedxz, angle);
-    std::vector<grid_pos> ztranslated = rend.translate_vertices_z(&rotatedyz, 1.5f);
-    rend.render_triangles(ztranslated, triangle_indices, tri_spec(ranges.intrps[0].smeared_scale, {163.0f / 255.0f, 190 / 255.0f , 140 / 255.0f, 255/ 255.0f}));
-    rend.render_triangles(ztranslated, triangle_indices, tri_spec(ranges.intrps[0].smoothed_scale, {94.0f / 255.0f, 129 / 255.0f , 172 / 255.0f, 255/ 255.0f}));
+
+
+    std::vector<grid_pos> smear = rend.scale_vertices(vertices, ranges.intrps[0].smeared_scale);
+    std::vector<grid_pos> smooth = rend.scale_vertices(vertices, ranges.intrps[0].smoothed_scale);
     
-    rend.render_wire_frame(&edges, &ztranslated, tri_spec(ranges.intrps[0].smoothed_scale, {163, 190, 140, 255}));
+    std::vector<grid_pos> smearz = rend.translate_vertices_z(&smear, 2.0f);
+    std::vector<grid_pos> smoothz = rend.translate_vertices_z(&smooth, 2.0f);
+
+    rend.render_triangles(smearz, triangle_indices, tri_spec(ranges.intrps[0].smeared_scale, {163.0f / 255.0f, 190 / 255.0f , 140 / 255.0f, 255/ 255.0f}));
+    rend.render_triangles(smoothz, triangle_indices, tri_spec(ranges.intrps[0].smoothed_scale, {94.0f / 255.0f, 129 / 255.0f , 172 / 255.0f, 255/ 255.0f}));
     //rend.draw_points(&translated);
     rend.present();
 

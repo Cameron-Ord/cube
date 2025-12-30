@@ -1,8 +1,17 @@
 #include "renderer.hpp"
+#include "../util.hpp"
 #include <iostream>
 #include <SDL3/SDL.h>
 #include <cmath>
 
+const f32 LEFT = -1.0f;
+const f32 RIGHT = 1.0f;
+const f32 TOP = 1.0f;
+const f32 BOTTOM = -1.0f;
+const f32 ZNEAR = 0.1f;
+const f32 ZFAR = 10.0f;
+
+constexpr f32 FOV = 60.0f * DEG2RAD;
 
 SDL_Renderer *renderer::create(SDL_Window *w){
   SDL_Renderer *tmp = SDL_CreateRenderer(w, dname);
@@ -13,6 +22,16 @@ SDL_Renderer *renderer::create(SDL_Window *w){
   return tmp;
 }
 
+
+std::vector<grid_pos> renderer::scale_vertices(const std::vector<grid_pos>& gpos, f32 scale){
+  std::vector<grid_pos> scaled = std::vector<grid_pos>(gpos);
+  for(auto it = scaled.begin(); it != scaled.end(); it++){
+    it->x *= scale;
+    it->y *= scale;
+    it->z *= scale;
+  }
+  return scaled;
+}
 
 void renderer::clear(void){
   SDL_RenderClear(r);
@@ -43,7 +62,7 @@ void renderer::render_triangles(const std::vector<grid_pos>& vertices, const std
 std::vector<SDL_Vertex> renderer::vertices_convert_sdl_vertex(const std::vector<grid_pos>& vertices, const tri_spec spec){
   std::vector<SDL_Vertex> conv;
   for(auto it = vertices.begin(); it != vertices.end(); it++){
-    scr_pos pos = to_screen(project(*it, spec.scale));
+    scr_pos pos = to_screen(project_pers(*it));
     conv.push_back({{pos.x, pos.y }, spec.colour, {0,0}});
   }
   return conv;
@@ -109,7 +128,7 @@ void renderer::print_edges(const std::vector<edge> *edges){
 
 void renderer::draw_points(const std::vector<grid_pos> *vertices){
   for(auto it = vertices->begin(); it != vertices->end(); it++){
-    set_point(to_screen(project(*it, 1.0f)));
+    set_point(to_screen(project_pers(*it)));
   }
 }
 
@@ -153,8 +172,8 @@ void renderer::render_wire_frame(const std::vector<edge> *edges, const std::vect
     grid_pos v0 = (*vertices)[e->x];
     grid_pos v1 = (*vertices)[e->y];
 
-    scr_pos p0 = to_screen(project(v0, spec.scale));
-    scr_pos p1 = to_screen(project(v1, spec.scale));
+    scr_pos p0 = to_screen(project_pers(v0));
+    scr_pos p1 = to_screen(project_pers(v1));
 
     SDL_RenderLine(r, p0.x, p0.y, p1.x, p1.y);
   }
@@ -183,9 +202,24 @@ scr_pos renderer::to_screen(scr_pos p){
   return scr_pos(xnorm, ynorm);
 }
 
-scr_pos renderer::project(grid_pos gpos, f32 scale){
-  const f32 dx = (gpos.x / gpos.z) * scale;
-  const f32 dy = (gpos.y / gpos.z) * scale;
+scr_pos renderer::project_ortho(grid_pos gpos){
+  const f32 dx = 2 * (gpos.x - LEFT) / (RIGHT - LEFT) -1;
+  const f32 dy = 2 * (gpos.y - BOTTOM) / (TOP - BOTTOM) -1;
+  return scr_pos(dx, dy);
+}
+
+scr_pos renderer::project_pers(grid_pos gpos){
+  f32 f = 1.0f / tanf(FOV * 0.5f);
+
+  const f32 dx = (gpos.x * f) / gpos.z;
+  const f32 dy = (gpos.y * f) / gpos.z;
+
+  return scr_pos(dx, dy);
+}
+
+scr_pos renderer::project(grid_pos gpos){
+  const f32 dx = (gpos.x / gpos.z);
+  const f32 dy = (gpos.y / gpos.z);
   return scr_pos(dx, dy);
 }
 

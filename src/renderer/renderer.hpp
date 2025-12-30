@@ -8,6 +8,8 @@
 typedef struct SDL_Renderer SDL_Renderer;
 typedef struct SDL_Window SDL_Window;
 
+
+
 struct tri_spec {
   tri_spec(f32 sc, SDL_FColor col) : scale(sc), colour(col) {}
   const f32 scale;
@@ -59,7 +61,7 @@ class renderer {
     std::vector<grid_pos> translate_vertices_x(const std::vector<grid_pos> *vertices, f32 dz);
     std::vector<grid_pos> rotate_vertices_xz(const std::vector<grid_pos> *vertices, f32 angle);
     std::vector<grid_pos> rotate_vertices_yz(const std::vector<grid_pos> *vertices, f32 angle);
- 
+    std::vector<grid_pos> scale_vertices(const std::vector<grid_pos>& gpos, f32 scale);
 
     grid_pos translate_z(grid_pos gpos, f32 inc);
     grid_pos translate_x(grid_pos gpos, f32 inc);
@@ -68,7 +70,9 @@ class renderer {
     grid_pos rotate_yz(grid_pos gpos, f32 angle);
 
     scr_pos to_screen(scr_pos p);
-    scr_pos project(grid_pos gpos, f32 scale);
+    scr_pos project(grid_pos gpos);
+    scr_pos project_ortho(grid_pos gpos);
+    scr_pos project_pers(grid_pos gpos);
 
     SDL_Renderer *get_renderer(void) { return r; }
     SDL_Renderer *create(SDL_Window *w);
