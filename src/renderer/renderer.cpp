@@ -28,8 +28,7 @@ SDL_Renderer *renderer::create(SDL_Window *w)
     return tmp;
 }
 
-std::vector<grid_pos>
-renderer::scale_vertices(const std::vector<grid_pos> &gpos, f32 scale)
+std::vector<grid_pos> renderer::scale_vertices(const std::vector<grid_pos> &gpos, f32 scale)
 {
     std::vector<grid_pos> scaled = std::vector<grid_pos>(gpos);
     for (auto it = scaled.begin(); it != scaled.end(); it++) {
@@ -42,33 +41,26 @@ renderer::scale_vertices(const std::vector<grid_pos> &gpos, f32 scale)
 
 void renderer::clear(void) { SDL_RenderClear(r); }
 
-void renderer::colour(u8 r8, u8 g8, u8 b8, u8 a8)
-{
-    SDL_SetRenderDrawColor(r, r8, g8, b8, a8);
-}
+void renderer::colour(u8 r8, u8 g8, u8 b8, u8 a8) { SDL_SetRenderDrawColor(r, r8, g8, b8, a8); }
 
 void renderer::present(void) { SDL_RenderPresent(r); }
 
 void renderer::fill_rect(rect builder) { SDL_RenderFillRect(r, &builder.box); }
 
-void renderer::render_triangles(const std::vector<grid_pos> &&vertices,
-                                const std::vector<indice3> &indices,
+void renderer::render_triangles(const std::vector<grid_pos> &&vertices, const std::vector<indice3> &indices,
                                 const SDL_FColor &col)
 {
-    const std::vector<SDL_Vertex> sdl_vertices =
-        vertices_convert_sdl_vertex(vertices, col);
+    const std::vector<SDL_Vertex> sdl_vertices = vertices_convert_sdl_vertex(vertices, col);
     const veci32 flat_indices = indice3_flatten(indices);
 
     const i32 nvertices = static_cast<i32>(sdl_vertices.size());
     const i32 nindices = static_cast<i32>(flat_indices.size());
 
-    SDL_RenderGeometry(r, nullptr, sdl_vertices.data(), nvertices,
-                       flat_indices.data(), nindices);
+    SDL_RenderGeometry(r, nullptr, sdl_vertices.data(), nvertices, flat_indices.data(), nindices);
 }
 
-std::vector<SDL_Vertex>
-renderer::vertices_convert_sdl_vertex(const std::vector<grid_pos> &vertices,
-                                      const SDL_FColor &col)
+std::vector<SDL_Vertex> renderer::vertices_convert_sdl_vertex(const std::vector<grid_pos> &vertices,
+                                                              const SDL_FColor &col)
 {
     std::vector<SDL_Vertex> conv;
     for (auto it = vertices.begin(); it != vertices.end(); it++) {
@@ -103,8 +95,7 @@ std::vector<edge> renderer::make_edges(const std::vector<indice4> &indices)
     return edges;
 }
 
-std::vector<indice3>
-renderer::quad_to_triangle(const std::vector<indice4> &indices)
+std::vector<indice3> renderer::quad_to_triangle(const std::vector<indice4> &indices)
 {
     std::vector<indice3> triangles;
     for (size_t i = 0; i < indices.size(); i++) {
@@ -119,8 +110,7 @@ void renderer::print_indice4(const std::vector<indice4> &indices)
 {
     for (size_t i = 0; i < indices.size(); i++) {
         const indice4 *ind = &indices[i];
-        std::cout << "{ " << ind->x << "," << ind->y << "," << ind->z << ","
-                  << ind->k << " }";
+        std::cout << "{ " << ind->x << "," << ind->y << "," << ind->z << "," << ind->k << " }";
     }
     std::cout << std::endl;
 }
@@ -150,9 +140,7 @@ void renderer::draw_points(const std::vector<grid_pos> &vertices)
     }
 }
 
-std::vector<grid_pos>
-renderer::rotate_vertices_yz(const std::vector<grid_pos> &&vertices,
-                             const f32 &angle)
+std::vector<grid_pos> renderer::rotate_vertices_yz(const std::vector<grid_pos> &&vertices, const f32 &angle)
 {
     std::vector<grid_pos> rotated = std::vector<grid_pos>(vertices);
     for (size_t i = 0; i < vertices.size(); i++) {
@@ -161,9 +149,7 @@ renderer::rotate_vertices_yz(const std::vector<grid_pos> &&vertices,
     return rotated;
 }
 
-std::vector<grid_pos>
-renderer::rotate_vertices_xz(const std::vector<grid_pos> &&vertices,
-                             const f32 &angle)
+std::vector<grid_pos> renderer::rotate_vertices_xz(const std::vector<grid_pos> &&vertices, const f32 &angle)
 {
     std::vector<grid_pos> rotated = std::vector<grid_pos>(vertices);
     for (size_t i = 0; i < vertices.size(); i++) {
@@ -172,9 +158,7 @@ renderer::rotate_vertices_xz(const std::vector<grid_pos> &&vertices,
     return rotated;
 }
 
-std::vector<grid_pos>
-renderer::translate_vertices_x(const std::vector<grid_pos> &&vertices,
-                               const f32 &dx)
+std::vector<grid_pos> renderer::translate_vertices_x(const std::vector<grid_pos> &&vertices, const f32 &dx)
 {
     std::vector<grid_pos> translated = std::vector<grid_pos>(vertices);
     for (size_t i = 0; i < vertices.size(); i++) {
@@ -183,9 +167,7 @@ renderer::translate_vertices_x(const std::vector<grid_pos> &&vertices,
     return translated;
 }
 
-std::vector<grid_pos>
-renderer::translate_vertices_z(const std::vector<grid_pos> &&vertices,
-                               const f32 &dz)
+std::vector<grid_pos> renderer::translate_vertices_z(const std::vector<grid_pos> &&vertices, const f32 &dz)
 {
     std::vector<grid_pos> translated = std::vector<grid_pos>(vertices);
     for (size_t i = 0; i < vertices.size(); i++) {
@@ -194,8 +176,7 @@ renderer::translate_vertices_z(const std::vector<grid_pos> &&vertices,
     return translated;
 }
 
-void renderer::render_wire_frame(const std::vector<grid_pos> &&vertices,
-                                 const std::vector<edge> &edges,
+void renderer::render_wire_frame(const std::vector<grid_pos> &&vertices, const std::vector<edge> &edges,
                                  const SDL_Color &col)
 {
     colour(col.r, col.g, col.b, col.a);
@@ -217,20 +198,11 @@ void renderer::set_point(scr_pos p)
     fill_rect(rect(p.x - size / 2, p.y - size / 2, size, size));
 }
 
-grid_pos renderer::translate_z(const grid_pos &gpos, const f32 &inc)
-{
-    return grid_pos(gpos.x, gpos.y, gpos.z + inc);
-}
+grid_pos renderer::translate_z(const grid_pos &gpos, const f32 &inc) { return grid_pos(gpos.x, gpos.y, gpos.z + inc); }
 
-grid_pos renderer::translate_x(const grid_pos &gpos, const f32 &inc)
-{
-    return grid_pos(gpos.x + inc, gpos.y, gpos.z);
-}
+grid_pos renderer::translate_x(const grid_pos &gpos, const f32 &inc) { return grid_pos(gpos.x + inc, gpos.y, gpos.z); }
 
-grid_pos renderer::translate_y(const grid_pos &gpos, const f32 &inc)
-{
-    return grid_pos(gpos.x, gpos.y + inc, gpos.z);
-}
+grid_pos renderer::translate_y(const grid_pos &gpos, const f32 &inc) { return grid_pos(gpos.x, gpos.y + inc, gpos.z); }
 
 scr_pos renderer::to_screen(const scr_pos &&p)
 {
@@ -239,7 +211,7 @@ scr_pos renderer::to_screen(const scr_pos &&p)
     return scr_pos(xnorm, ynorm);
 }
 
-scr_pos renderer::project_ortho(const grid_pos &gpos, const f32&& aspect_ratio)
+scr_pos renderer::project_ortho(const grid_pos &gpos, const f32 &&aspect_ratio)
 {
     const f32 dx = 2 * (gpos.x - LEFT) / (RIGHT - LEFT) - 1;
     const f32 dy = 2 * (gpos.y - BOTTOM) / (TOP - BOTTOM) - 1;

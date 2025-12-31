@@ -13,7 +13,4 @@ SDL_Window *window::create(void)
     return tmp;
 }
 
-void window::win_size_update(void)
-{
-    SDL_GetWindowSize(w, &width, &height);
-}
+void window::win_size_update(void) { SDL_GetWindowSize(w, &width, &height); }

@@ -3,7 +3,7 @@ AlignConsecutiveAssignments: None
 AlignConsecutiveBitFields: None
 AlignConsecutiveDeclarations: None
 AlignEscapedNewlines: Right
-AlignOperands: Align
+AlignOperands: DontAlign
 AlignTrailingComments: true
 
 AllowAllArgumentsOnNextLine: true
@@ -51,7 +51,7 @@ IncludeBlocks: Preserve
 
 # No length limit, in case it breaks macros, you can
 # disable it with /* clang-format off/on */ comments
-ColumnLimit: 0
+ColumnLimit: 120
 
 IndentWidth: 4
 ContinuationIndentWidth: 4
