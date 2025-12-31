@@ -81,9 +81,9 @@ public:
   grid_pos rotate_xz(const grid_pos &gpos, const f32 &angle);
   grid_pos rotate_yz(const grid_pos &gpos, const f32 &angle);
 
-  scr_pos project(const grid_pos &gpos);
-  scr_pos project_ortho(const grid_pos &gpos);
-  scr_pos project_pers(const grid_pos &gpos);
+  scr_pos project(const grid_pos &gpos, const f32&& aspect_ratio);
+  scr_pos project_ortho(const grid_pos &gpos, const f32&& aspect_ratio);
+  scr_pos project_pers(const grid_pos &gpos, const f32&& aspect_ratio);
 
   SDL_Renderer *get_renderer(void) { return r; }
   SDL_Renderer *create(SDL_Window *w);

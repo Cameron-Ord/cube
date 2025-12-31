@@ -72,7 +72,7 @@ renderer::vertices_convert_sdl_vertex(const std::vector<grid_pos> &vertices,
 {
     std::vector<SDL_Vertex> conv;
     for (auto it = vertices.begin(); it != vertices.end(); it++) {
-        scr_pos pos = to_screen(project_pers(*it));
+        scr_pos pos = to_screen(project_pers(*it, (f32)window_width / window_height));
         conv.push_back({ { pos.x, pos.y }, col, { 0, 0 } });
     }
     return conv;
@@ -146,7 +146,7 @@ void renderer::print_edges(const std::vector<edge> &edges)
 void renderer::draw_points(const std::vector<grid_pos> &vertices)
 {
     for (auto it = vertices.begin(); it != vertices.end(); it++) {
-        set_point(to_screen(project_pers(*it)));
+        set_point(to_screen(project_pers(*it, (f32)window_width / window_height)));
     }
 }
 
@@ -204,8 +204,8 @@ void renderer::render_wire_frame(const std::vector<grid_pos> &&vertices,
         grid_pos v0 = vertices[e->x];
         grid_pos v1 = vertices[e->y];
 
-        scr_pos p0 = to_screen(project_pers(v0));
-        scr_pos p1 = to_screen(project_pers(v1));
+        scr_pos p0 = to_screen(project_pers(v0, (f32)window_width / window_height));
+        scr_pos p1 = to_screen(project_pers(v1, (f32)window_width / window_height));
 
         SDL_RenderLine(r, p0.x, p0.y, p1.x, p1.y);
     }
@@ -239,28 +239,28 @@ scr_pos renderer::to_screen(const scr_pos &&p)
     return scr_pos(xnorm, ynorm);
 }
 
-scr_pos renderer::project_ortho(const grid_pos &gpos)
+scr_pos renderer::project_ortho(const grid_pos &gpos, const f32&& aspect_ratio)
 {
     const f32 dx = 2 * (gpos.x - LEFT) / (RIGHT - LEFT) - 1;
     const f32 dy = 2 * (gpos.y - BOTTOM) / (TOP - BOTTOM) - 1;
-    return scr_pos(dx, dy);
+    return scr_pos(dx / aspect_ratio, dy);
 }
 
-scr_pos renderer::project_pers(const grid_pos &gpos)
+scr_pos renderer::project_pers(const grid_pos &gpos, const f32 &&aspect_ratio)
 {
     f32 f = 1.0f / tanf(FOV * 0.5f);
 
     const f32 dx = (gpos.x * f) / gpos.z;
     const f32 dy = (gpos.y * f) / gpos.z;
 
-    return scr_pos(dx, dy);
+    return scr_pos(dx / aspect_ratio, dy);
 }
 
-scr_pos renderer::project(const grid_pos &gpos)
+scr_pos renderer::project(const grid_pos &gpos, const f32 &&aspect_ratio)
 {
     const f32 dx = (gpos.x / gpos.z);
     const f32 dy = (gpos.y / gpos.z);
-    return scr_pos(dx, dy);
+    return scr_pos(dx / aspect_ratio, dy);
 }
 
 grid_pos renderer::rotate_yz(const grid_pos &gpos, const f32 &angle)
