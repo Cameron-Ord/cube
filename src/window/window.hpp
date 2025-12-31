@@ -12,6 +12,8 @@ public:
   void set_window(SDL_Window *ptr) { w = ptr; }
   SDL_Window *get_window(void) { return w; }
 
+  void win_size_update(void);
+
   i32 get_width(void) { return width; }
   i32 get_height(void) { return height; }
 

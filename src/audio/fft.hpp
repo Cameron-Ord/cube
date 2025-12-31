@@ -19,7 +19,7 @@ struct transformer {
   f64 freq_range_sum(const f32 MAX_FREQ, const f32 MIN_FREQ,
                      const i32 sample_rate);
   void compf_to_float(void);
-  vecf64 fft_exec(const vecf64 &fft_in, const i32 sample_rate);
+  f64 fft_exec(const vecf64 &fft_in, const i32 sample_rate);
   size_t bit_reverse(size_t index, size_t log2n);
   void iterative_fft(vecf64 &fft_in);
   void hamming_window(vecf64 &fft_in);
@@ -51,7 +51,7 @@ struct rythm_interpreter {
 };
 
 struct range_holder {
-  range_holder(void) : intrps(4), sums(4) {}
-  std::vector<rythm_interpreter> intrps;
-  vecf64 sums;
+  range_holder(void) : ip(), sum(0.0f) {}
+  rythm_interpreter ip;
+  f64 sum;
 };

@@ -55,7 +55,7 @@ public:
                         const std::vector<indice3> &indices,
                         const SDL_FColor &col);
   void render_wire_frame(const std::vector<grid_pos> &&vertices,
-                         const std::vector<edge> &edges, const SDL_FColor &col);
+                         const std::vector<edge> &edges, const SDL_Color &col);
   // Same idea here but its just considering the pipeline of
   // scale->rotate->transform->render, making copies every time would be
   // wasteful, but i mean is this optimization really necessary in this case?
@@ -100,6 +100,7 @@ public:
   void clear(void);
   void colour(u8 r8, u8 g8, u8 b8, u8 a8);
   void present(void);
+  void update_draw_plane(const i32&& width, const i32&& height);
 
 private:
   const char *dname;
