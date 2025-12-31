@@ -217,6 +217,39 @@ int main(int argc, char **argv)
                 0.0f),
             edges, fcol_to_icol(smear_col));
 
+        rend.render_triangles(
+            rend.translate_vertices_x(
+                rend.translate_vertices_z(
+                    rend.rotate_vertices_yz(rend.rotate_vertices_xz(rend.scale_vertices(
+                                                                        vertices, ranges.ip.smeared_scale * 0.5),
+                                                                    angle),
+                                            angle),
+                    2.0f),
+                0.0f),
+            triangle_indices, smear_col);
+
+        rend.render_triangles(
+            rend.translate_vertices_x(
+                rend.translate_vertices_z(
+                    rend.rotate_vertices_yz(rend.rotate_vertices_xz(rend.scale_vertices(
+                                                                        vertices, ranges.ip.smoothed_scale * 0.5),
+                                                                    angle),
+                                            angle),
+                    2.0f),
+                0.0f),
+            triangle_indices, box_col);
+
+        rend.render_wire_frame(
+            rend.translate_vertices_x(
+                rend.translate_vertices_z(
+                    rend.rotate_vertices_yz(rend.rotate_vertices_xz(rend.scale_vertices(
+                                                                        vertices, ranges.ip.smoothed_scale * 0.5),
+                                                                    angle),
+                                            angle),
+                    2.0f),
+                0.0f),
+            edges, fcol_to_icol(smear_col));
+
         // rend.draw_points(&translated);
         rend.present();
 
