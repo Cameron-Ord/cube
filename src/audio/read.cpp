@@ -40,7 +40,6 @@ audio_data read_file(file_data file)
         return audio_data(nullptr, vecf64(), meta_data(0, 0, 0, 0), false);
     }
     sf_close(file.open);
-    return audio_data(std::move(buffer), vecf64(FFT_SIZE),
-                      meta_data(file.channels, file.sample_rate, samples, bytes),
-                      true);
+    return audio_data(
+        std::move(buffer), vecf64(FFT_SIZE), meta_data(file.channels, file.sample_rate, samples, bytes), true);
 }

@@ -40,7 +40,7 @@ struct indice3
 
 struct rect
 {
-    rect(f32 x, f32 y, f32 w, f32 h) : box({ x, y, w, h }) {}
+    rect(f32 x, f32 y, f32 w, f32 h) : box({x, y, w, h}) {}
     SDL_FRect box;
 };
 
@@ -60,10 +60,10 @@ class renderer
     // These functions are meant to be called with a vertices vector that has had
     // all its transformations done on it and then piped straight into the
     // function, so they take rvalue references
-    void render_triangles(const std::vector<grid_pos> &&vertices, const std::vector<indice3> &indices,
-                          const SDL_FColor &col);
-    void render_wire_frame(const std::vector<grid_pos> &&vertices, const std::vector<edge> &edges,
-                           const SDL_Color &col);
+    void render_triangles(
+        const std::vector<grid_pos> &&vertices, const std::vector<indice3> &indices, const SDL_FColor &col);
+    void
+    render_wire_frame(const std::vector<grid_pos> &&vertices, const std::vector<edge> &edges, const SDL_Color &col);
     // Same idea here but its just considering the pipeline of
     // scale->rotate->transform->render, making copies every time would be
     // wasteful, but i mean is this optimization really necessary in this case?

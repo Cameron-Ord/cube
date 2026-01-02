@@ -3,45 +3,65 @@
 #include <cmath>
 #include <iostream>
 
-const f64 MAX_FREQ = 12000.0f;
-const f64 MIN_FREQ = 60.0f;
+const std::array<freq_range, FREQUENCY_BINS> ranges {
+  freq_range(30.0, 120.0),
+  freq_range(120.0, 250.0),
+  freq_range(250.0, 500.0),
+  freq_range(500.0, 1000.0),
+  freq_range(1000.0, 2000.0),
+  freq_range(2000.0, 4000.0),
+  freq_range(4000.0, 8000.0),
+  freq_range(8000.0, 16000.0),
+};
 
-const f64 THRESHOLD = 0.10f;
-
-bool rythm_interpreter::is_less(const f64 &sum)
-{
-    return sum * (1.0 + THRESHOLD) < avg;
-}
-
-bool rythm_interpreter::is_more(const f64 &sum)
-{
-    return sum > avg * (1.0 + THRESHOLD);
-}
-
-transformer::transformer(void)
-    : output(FFT_SIZE), amplitudes(FFT_SIZE / 2), hamming_values(FFT_SIZE)
+transformer::transformer(void) : output(FFT_SIZE), amplitudes(FFT_SIZE / 2), hamming_values(FFT_SIZE)
 {
     calculate_window();
 }
 
-void rythm_interpreter::print_ema(f64 sum)
-{
-    std::cout << "SUM:" << "(" << sum << ")" << " AVG:" << "(" << avg << ")"
-              << std::endl;
+//Normalized log sum 0 .. 1
+std::array<f64, FREQUENCY_BINS> transformer::nsum_ranges(const i32& sample_rate){
+  std::array<f64, FREQUENCY_BINS> bins;
+  f64 lmax = 0.0;
+
+  for(u32 i = 0; i < ranges.size() && i < bins.size(); i++){
+    f64 sum = freq_range_sum(ranges[i].low, ranges[i].high, sample_rate);
+    if(sum > lmax){
+      lmax = sum;
+    }
+    bins[i] = sum;
+  }
+
+  for(u32 i = 0; i < bins.size(); i++){
+    if(lmax != 0.0){
+      bins[i] /= lmax;
+    }
+  }
+  return bins;
 }
 
-f64 rythm_interpreter::ema_calculate(f64 sum, f64 alpha)
-{
-    return alpha * sum + (1.0 - alpha) * avg;
+std::array<f64, FREQUENCY_BINS> transformer::sum_ranges(const i32& sample_rate){
+  std::array<f64, FREQUENCY_BINS> bins;
+  for(u32 i = 0; i < ranges.size() && i < bins.size(); i++){
+    bins[i] = freq_range_sum(ranges[i].low, ranges[i].high, sample_rate);
+  }
+  return bins;
 }
 
-f64 transformer::fft_exec(const vecf64 &fft_in, const i32 sample_rate)
+
+void transformer::bins_print(std::array<f64, FREQUENCY_BINS>& bins){
+  for(u32 i = 0; i < bins.size(); i++){
+    std::cout << i << ":{ " << bins[i] << " }" << std::endl;
+  }
+}
+
+std::array<f64, FREQUENCY_BINS> transformer::fft_exec(const vecf64 &fft_in, const i32& sample_rate)
 {
     vecf64 samples = vecf64(fft_in);
     hamming_window(samples);
     iterative_fft(samples);
     compf_to_float();
-    return freq_range_sum(MAX_FREQ, MIN_FREQ, sample_rate);
+    return sum_ranges(sample_rate);
 }
 
 static compf64 c_from_real(const f64 real)
@@ -167,8 +187,7 @@ void transformer::calculate_window(void)
     }
 }
 
-f64 transformer::freq_range_sum(const f32 MAX_FREQ, const f32 MIN_FREQ,
-                                const i32 sample_rate)
+f64 transformer::freq_range_sum(const f64& MIN_FREQ, const f64& MAX_FREQ, const i32& sample_rate)
 {
     const u32 bin_max = (MAX_FREQ * FFT_SIZE / sample_rate);
     const u32 bin_min = (MIN_FREQ * FFT_SIZE / sample_rate);
@@ -176,12 +195,10 @@ f64 transformer::freq_range_sum(const f32 MAX_FREQ, const f32 MIN_FREQ,
     for (u32 i = bin_min; i < bin_max && i < amplitudes.size(); i++) {
         sum += amplitudes[i] * amplitudes[i];
     }
-    f64 mean = sum / (bin_max - bin_min);
-    return sqrt(mean);
+    return log(1.0 + sum);
 }
 
-f32 rythm_interpreter::scale_interpolate(const f32 &target_scale,
-                                         const f32 &prev, const f32 &alpha)
+f32 processor::interpolate(const f32 &target_scale, const f32 &prev, const f32 &alpha)
 {
     return (target_scale - prev) * alpha;
 }

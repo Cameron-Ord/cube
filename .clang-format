@@ -40,7 +40,12 @@ BraceWrapping:
   SplitEmptyRecord: true
 
 # Make the closing brace of container literals go to a new line
-Cpp11BracedListStyle: false
+Cpp11BracedListStyle: true
+
+BinPackArguments: false
+BinPackParameters: false
+AlignAfterOpenBracket: AlwaysBreak
+
 
 # Never format includes
 IncludeBlocks: Preserve

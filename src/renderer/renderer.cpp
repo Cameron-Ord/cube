@@ -47,8 +47,8 @@ void renderer::present(void) { SDL_RenderPresent(r); }
 
 void renderer::fill_rect(rect builder) { SDL_RenderFillRect(r, &builder.box); }
 
-void renderer::render_triangles(const std::vector<grid_pos> &&vertices, const std::vector<indice3> &indices,
-                                const SDL_FColor &col)
+void renderer::render_triangles(
+    const std::vector<grid_pos> &&vertices, const std::vector<indice3> &indices, const SDL_FColor &col)
 {
     const std::vector<SDL_Vertex> sdl_vertices = vertices_convert_sdl_vertex(vertices, col);
     const veci32 flat_indices = indice3_flatten(indices);
@@ -59,13 +59,13 @@ void renderer::render_triangles(const std::vector<grid_pos> &&vertices, const st
     SDL_RenderGeometry(r, nullptr, sdl_vertices.data(), nvertices, flat_indices.data(), nindices);
 }
 
-std::vector<SDL_Vertex> renderer::vertices_convert_sdl_vertex(const std::vector<grid_pos> &vertices,
-                                                              const SDL_FColor &col)
+std::vector<SDL_Vertex>
+renderer::vertices_convert_sdl_vertex(const std::vector<grid_pos> &vertices, const SDL_FColor &col)
 {
     std::vector<SDL_Vertex> conv;
     for (auto it = vertices.begin(); it != vertices.end(); it++) {
         scr_pos pos = to_screen(project_pers(*it, (f32)window_width / window_height));
-        conv.push_back({ { pos.x, pos.y }, col, { 0, 0 } });
+        conv.push_back({{pos.x, pos.y}, col, {0, 0}});
     }
     return conv;
 }
@@ -87,10 +87,10 @@ std::vector<edge> renderer::make_edges(const std::vector<indice4> &indices)
     std::vector<edge> edges;
     for (size_t i = 0; i < indices.size(); i++) {
         const indice4 *ind = &indices[i];
-        edges.push_back({ ind->x, ind->y });
-        edges.push_back({ ind->y, ind->z });
-        edges.push_back({ ind->z, ind->k });
-        edges.push_back({ ind->k, ind->x });
+        edges.push_back({ind->x, ind->y});
+        edges.push_back({ind->y, ind->z});
+        edges.push_back({ind->z, ind->k});
+        edges.push_back({ind->k, ind->x});
     }
     return edges;
 }
@@ -100,8 +100,8 @@ std::vector<indice3> renderer::quad_to_triangle(const std::vector<indice4> &indi
     std::vector<indice3> triangles;
     for (size_t i = 0; i < indices.size(); i++) {
         const indice4 *ind = &indices[i];
-        triangles.push_back({ ind->x, ind->y, ind->z });
-        triangles.push_back({ ind->x, ind->z, ind->k });
+        triangles.push_back({ind->x, ind->y, ind->z});
+        triangles.push_back({ind->x, ind->z, ind->k});
     }
     return triangles;
 }
@@ -176,8 +176,8 @@ std::vector<grid_pos> renderer::translate_vertices_z(const std::vector<grid_pos>
     return translated;
 }
 
-void renderer::render_wire_frame(const std::vector<grid_pos> &&vertices, const std::vector<edge> &edges,
-                                 const SDL_Color &col)
+void renderer::render_wire_frame(
+    const std::vector<grid_pos> &&vertices, const std::vector<edge> &edges, const SDL_Color &col)
 {
     colour(col.r, col.g, col.b, col.a);
     for (size_t i = 0; i < edges.size(); i++) {

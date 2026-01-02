@@ -7,9 +7,9 @@
 #include <SDL3/SDL.h>
 #include <cmath>
 
-const SDL_Color background = { 76, 86, 106, 255 };
-constexpr SDL_FColor smear_col = { 163.0f / 255.0f, 190.0f / 255.0f, 140.0f / 255.0f, 255.0f / 255.0f };
-constexpr SDL_FColor box_col = { 94.0f / 255.0f, 129.0f / 255.0f, 172.0f / 255.0f, 255.0f / 255.0f };
+const SDL_Color background = {76, 86, 106, 255};
+constexpr SDL_FColor smear_col = {163.0f / 255.0f, 190.0f / 255.0f, 140.0f / 255.0f, 255.0f / 255.0f};
+constexpr SDL_FColor box_col = {94.0f / 255.0f, 129.0f / 255.0f, 172.0f / 255.0f, 255.0f / 255.0f};
 
 static bool init_sdl(void);
 static void quit_sdl(void);
@@ -21,7 +21,7 @@ static SDL_Color fcol_to_icol(const SDL_FColor &c)
     const u8 b = static_cast<u8>(c.b * 255);
     const u8 a = static_cast<u8>(c.a * 255);
 
-    return { r, g, b, a };
+    return {r, g, b, a};
 }
 
 #include <iostream>
@@ -80,30 +80,37 @@ int main(int argc, char **argv)
     renderer rend = renderer(nullptr, win.get_width(), win.get_height());
     rend.set_renderer(rend.create(win.get_window()));
 
-    std::vector<grid_pos> vertices = { grid_pos(0.5f, 0.5f, 0.5f),    grid_pos(-0.5f, 0.5f, 0.5f),
-                                       grid_pos(-0.5f, -0.5f, 0.5f),  grid_pos(0.5f, -0.5f, 0.5f),
+    std::vector<grid_pos> vertices = {
+        grid_pos(0.5f, 0.5f, 0.5f),
+        grid_pos(-0.5f, 0.5f, 0.5f),
+        grid_pos(-0.5f, -0.5f, 0.5f),
+        grid_pos(0.5f, -0.5f, 0.5f),
 
-                                       grid_pos(0.5f, 0.5f, -0.5f),   grid_pos(-0.5f, 0.5f, -0.5f),
-                                       grid_pos(-0.5f, -0.5f, -0.5f), grid_pos(0.5f, -0.5f, -0.5f) };
+        grid_pos(0.5f, 0.5f, -0.5f),
+        grid_pos(-0.5f, 0.5f, -0.5f),
+        grid_pos(-0.5f, -0.5f, -0.5f),
+        grid_pos(0.5f, -0.5f, -0.5f),
+    };
 
-    std::vector<indice4> indices = { indice4(0, 1, 2, 3), indice4(4, 5, 6, 7), indice4(1, 5, 6, 2),
-                                     indice4(0, 3, 7, 4), indice4(0, 4, 5, 1), indice4(3, 2, 6, 7) };
+    std::vector<indice4> indices = {
+        indice4(0, 1, 2, 3),
+        indice4(4, 5, 6, 7),
+        indice4(1, 5, 6, 2),
+        indice4(0, 3, 7, 4),
+        indice4(0, 4, 5, 1),
+        indice4(3, 2, 6, 7),
+    };
+
     std::vector<edge> edges = rend.make_edges(indices);
     std::vector<indice3> triangle_indices = rend.quad_to_triangle(indices);
     transformer fft;
-    range_holder ranges;
 
     SDL_ShowWindow(win.get_window());
     SDL_EnableScreenSaver();
 
-    const f32 scale_default = 1.0f;
-    const f32 scale_high = 1.5f;
-    const f32 scale_low = 0.5;
-
-    const u32 FPS = 240;
     // a = 1 - e(-t / time_constant)
-    const f32 ema_alpha = 1.0 - exp(-1.0 / (FPS * 0.10));
-    const f32 frame_alpha = 1.0 - exp(-1.0 / (FPS * 0.15));
+    const u32 FPS = 60;
+    const f32 frame_alpha = 1.0 - exp(-1.0 / (FPS * 0.09));
 
     const u32 frame_gate = 1000 / FPS;
     bool running = true;
@@ -123,26 +130,8 @@ int main(int argc, char **argv)
         }
 
         if (data->valid && data->meta.position < data->meta.samples) {
-            ranges.sum = fft.fft_exec(data->fft_in, data->meta.sample_rate);
-            rythm_interpreter &ri = ranges.ip;
-
-            ri.ema_update(ri.ema_calculate(ranges.sum, ema_alpha));
-            if (ri.is_more(ranges.sum)) {
-                ri.interpolate_apply(ri.smoothed_scale,
-                                     ri.scale_interpolate(scale_high, ri.smoothed_scale, frame_alpha));
-                ri.interpolate_apply(ri.smeared_scale,
-                                     ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, frame_alpha));
-            } else if (ri.is_less(ranges.sum)) {
-                ri.interpolate_apply(ri.smoothed_scale,
-                                     ri.scale_interpolate(scale_low, ri.smoothed_scale, frame_alpha));
-                ri.interpolate_apply(ri.smeared_scale,
-                                     ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, frame_alpha));
-            } else {
-                ri.interpolate_apply(ri.smoothed_scale,
-                                     ri.scale_interpolate(scale_default, ri.smoothed_scale, frame_alpha));
-                ri.interpolate_apply(ri.smeared_scale,
-                                     ri.scale_interpolate(ri.smoothed_scale, ri.smeared_scale, frame_alpha));
-            }
+          std::array<f64, FREQUENCY_BINS> bins = fft.fft_exec(data->fft_in, data->meta.sample_rate);
+          fft.bins_print(bins);
         }
 
         // dz += 1.0f * (1.0f / 60);
@@ -165,63 +154,6 @@ int main(int argc, char **argv)
                 break;
             }
         }
-
-        rend.render_triangles(
-            rend.translate_vertices_x(
-                rend.translate_vertices_z(
-                    rend.rotate_vertices_yz(
-                        rend.rotate_vertices_xz(rend.scale_vertices(vertices, ranges.ip.smeared_scale), angle), angle),
-                    2.0f),
-                0.0f),
-            triangle_indices, smear_col);
-
-        rend.render_triangles(
-            rend.translate_vertices_x(
-                rend.translate_vertices_z(
-                    rend.rotate_vertices_yz(
-                        rend.rotate_vertices_xz(rend.scale_vertices(vertices, ranges.ip.smoothed_scale), angle), angle),
-                    2.0f),
-                0.0f),
-            triangle_indices, box_col);
-
-        rend.render_wire_frame(
-            rend.translate_vertices_x(
-                rend.translate_vertices_z(
-                    rend.rotate_vertices_yz(
-                        rend.rotate_vertices_xz(rend.scale_vertices(vertices, ranges.ip.smoothed_scale), angle), angle),
-                    2.0f),
-                0.0f),
-            edges, fcol_to_icol(smear_col));
-
-        rend.render_triangles(
-            rend.translate_vertices_x(
-                rend.translate_vertices_z(
-                    rend.rotate_vertices_yz(
-                        rend.rotate_vertices_xz(rend.scale_vertices(vertices, ranges.ip.smeared_scale * 0.5), angle),
-                        angle),
-                    2.0f),
-                0.0f),
-            triangle_indices, smear_col);
-
-        rend.render_triangles(
-            rend.translate_vertices_x(
-                rend.translate_vertices_z(
-                    rend.rotate_vertices_yz(
-                        rend.rotate_vertices_xz(rend.scale_vertices(vertices, ranges.ip.smoothed_scale * 0.5), angle),
-                        angle),
-                    2.0f),
-                0.0f),
-            triangle_indices, box_col);
-
-        rend.render_wire_frame(
-            rend.translate_vertices_x(
-                rend.translate_vertices_z(
-                    rend.rotate_vertices_yz(
-                        rend.rotate_vertices_xz(rend.scale_vertices(vertices, ranges.ip.smoothed_scale * 0.5), angle),
-                        angle),
-                    2.0f),
-                0.0f),
-            edges, fcol_to_icol(smear_col));
 
         // rend.draw_points(&translated);
         rend.present();
