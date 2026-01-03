@@ -4,7 +4,7 @@
 #include <cmath>
 
 const f64 FREQ_RANGE_MIN = 40.0;
-const f64 FREQ_RANGE_MAX = 300.0;
+const f64 FREQ_RANGE_MAX = 8000.0;
 const f64 DB_MIN = -60.0;
 const f64 DB_MAX = -8.0;
 
