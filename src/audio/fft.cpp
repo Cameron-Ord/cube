@@ -1,18 +1,39 @@
 #include "fft.hpp"
 #include "../util.hpp"
+#include <array>
 #include <cmath>
 #include <iostream>
 
-const std::array<freq_range, FREQUENCY_BINS> ranges {
-  freq_range(30.0, 120.0),
-  freq_range(120.0, 250.0),
-  freq_range(250.0, 500.0),
-  freq_range(500.0, 1000.0),
-  freq_range(1000.0, 2000.0),
-  freq_range(2000.0, 4000.0),
-  freq_range(4000.0, 8000.0),
-  freq_range(8000.0, 16000.0),
-};
+const f64 FREQ_RANGE_MIN = 250.0;
+const f64 FREQ_RANGE_MAX = 20000.0;
+const f64 FRATIO = FREQ_RANGE_MAX / FREQ_RANGE_MIN;
+
+std::vector<freq_range> gen_bins(void)
+{
+    // BASE * POSITION
+    // 20 * 1000^0.95 = 14158..
+    // 20 * 1000^0.98 = 17419..
+    // 20 * 1000^1 = 20000
+    std::vector<freq_range> ranges(FREQUENCY_BINS , freq_range(0.0, 0.0));
+    for (i32 i = 0; i < FREQUENCY_BINS; i++) {
+        f64 current = (f64)i / (FREQUENCY_BINS);
+        f64 next = (f64)(i + 1) / (FREQUENCY_BINS );
+
+        f64 min = FREQ_RANGE_MIN * pow(FRATIO, current);
+        f64 max = FREQ_RANGE_MIN * pow(FRATIO, next);
+        // f64 max = FREQ_RANGE_MAX * pow(FRATIO, t);
+        ranges[i] = freq_range(min, max);
+    }
+
+    return ranges;
+}
+
+void print_bins(const std::vector<freq_range>& ranges){
+  for(u32 i = 0; i < ranges.size(); i++){
+    std::cout << i + 1 << ":{ " << ranges[i].low << ", " << ranges[i].high << " }" << std::endl;
+  }
+}
+
 
 transformer::transformer(void) : output(FFT_SIZE), amplitudes(FFT_SIZE / 2), hamming_values(FFT_SIZE)
 {
@@ -20,8 +41,8 @@ transformer::transformer(void) : output(FFT_SIZE), amplitudes(FFT_SIZE / 2), ham
 }
 
 //Normalized log sum 0 .. 1
-std::array<f64, FREQUENCY_BINS> transformer::nsum_ranges(const i32& sample_rate){
-  std::array<f64, FREQUENCY_BINS> bins;
+std::vector<f64> transformer::nsum_ranges(const i32& sample_rate, const std::vector<freq_range>& ranges){
+  std::vector<f64> bins(FREQUENCY_BINS);
   f64 lmax = 0.0;
 
   for(u32 i = 0; i < ranges.size() && i < bins.size(); i++){
@@ -40,8 +61,8 @@ std::array<f64, FREQUENCY_BINS> transformer::nsum_ranges(const i32& sample_rate)
   return bins;
 }
 
-std::array<f64, FREQUENCY_BINS> transformer::sum_ranges(const i32& sample_rate){
-  std::array<f64, FREQUENCY_BINS> bins;
+std::vector<f64> transformer::sum_ranges(const i32& sample_rate, const std::vector<freq_range>& ranges){
+  std::vector<f64> bins(FREQUENCY_BINS);
   for(u32 i = 0; i < ranges.size() && i < bins.size(); i++){
     bins[i] = freq_range_sum(ranges[i].low, ranges[i].high, sample_rate);
   }
@@ -49,19 +70,19 @@ std::array<f64, FREQUENCY_BINS> transformer::sum_ranges(const i32& sample_rate){
 }
 
 
-void transformer::bins_print(std::array<f64, FREQUENCY_BINS>& bins){
+void transformer::bins_print(std::vector<f64>& bins){
   for(u32 i = 0; i < bins.size(); i++){
     std::cout << i << ":{ " << bins[i] << " }" << std::endl;
   }
 }
 
-std::array<f64, FREQUENCY_BINS> transformer::fft_exec(const vecf64 &fft_in, const i32& sample_rate)
+std::vector<f64> transformer::fft_exec(const vecf64 &fft_in, const i32& sample_rate, const std::vector<freq_range>& ranges)
 {
     vecf64 samples = vecf64(fft_in);
     hamming_window(samples);
     iterative_fft(samples);
     compf_to_float();
-    return sum_ranges(sample_rate);
+    return nsum_ranges(sample_rate, ranges);
 }
 
 static compf64 c_from_real(const f64 real)
@@ -198,21 +219,3 @@ f64 transformer::freq_range_sum(const f64& MIN_FREQ, const f64& MAX_FREQ, const 
     return log(1.0 + sum);
 }
 
-f32 processor::interpolate(const f32 &target_scale, const f32 &prev, const f32 &alpha)
-{
-    return (target_scale - prev) * alpha;
-}
-
-// f64 transformer::linear_smooth(f64 base, f64 sm, i32 amt, i32 frames)
-//{
-// return (base - sm) * amt * (1.0 / frames);
-//}
-//
-// void transformer::interpolate(vecf64& sums, vecf64& ssmooth, vecf64& ssmear,
-// const i32 frames)
-//{
-////for (i32 i = 0; i < DIVISOR; i++) {
-////ssmooth[i] += ls(sums[i], ssmooth[i], smooth, frames);
-////ssmear[i] += ls(ssmooth[i], ssmear[i], smear, frames);
-////}
-//}

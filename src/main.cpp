@@ -7,24 +7,14 @@
 #include <SDL3/SDL.h>
 #include <cmath>
 
+#include <iostream>
+
 const SDL_Color background = {76, 86, 106, 255};
-constexpr SDL_FColor smear_col = {163.0f / 255.0f, 190.0f / 255.0f, 140.0f / 255.0f, 255.0f / 255.0f};
-constexpr SDL_FColor box_col = {94.0f / 255.0f, 129.0f / 255.0f, 172.0f / 255.0f, 255.0f / 255.0f};
+const SDL_Color smear_col = {163, 190, 140, 255};
+const SDL_Color box_col = {94, 129, 172, 255};
 
 static bool init_sdl(void);
 static void quit_sdl(void);
-
-static SDL_Color fcol_to_icol(const SDL_FColor &c)
-{
-    const u8 r = static_cast<u8>(c.r * 255);
-    const u8 g = static_cast<u8>(c.g * 255);
-    const u8 b = static_cast<u8>(c.b * 255);
-    const u8 a = static_cast<u8>(c.a * 255);
-
-    return {r, g, b, a};
-}
-
-#include <iostream>
 
 int main(int argc, char **argv)
 {
@@ -77,7 +67,7 @@ int main(int argc, char **argv)
 
     window win = window("sv", 400, 300, SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE);
     win.set_window(win.create());
-    renderer rend = renderer(nullptr, win.get_width(), win.get_height());
+    renderer rend = renderer(nullptr, win.get_width(), win.get_height(), background, smear_col, box_col);
     rend.set_renderer(rend.create(win.get_window()));
 
     std::vector<grid_pos> vertices = {
@@ -110,13 +100,21 @@ int main(int argc, char **argv)
 
     // a = 1 - e(-t / time_constant)
     const u32 FPS = 60;
-    const f32 frame_alpha = 1.0 - exp(-1.0 / (FPS * 0.09));
+    const f32 frame_alpha = 1.0 - exp(-1.0 / (FPS * 0.05));
 
     const u32 frame_gate = 1000 / FPS;
     bool running = true;
 
     // f32 dz = 0.0f;
     f32 angle = 0.0f;
+
+    std::vector<freq_range> ranges = gen_bins();
+    std::vector<f64> bin_sums(FREQUENCY_BINS);
+    std::vector<f64> smooth_bin_sums(FREQUENCY_BINS);
+    std::vector<f64> smear_bin_sums(FREQUENCY_BINS);
+
+    print_bins(ranges);
+
     while (running) {
         u64 start = SDL_GetTicks();
         rend.colour(background.r, background.g, background.b, background.a);
@@ -130,8 +128,11 @@ int main(int argc, char **argv)
         }
 
         if (data->valid && data->meta.position < data->meta.samples) {
-          std::array<f64, FREQUENCY_BINS> bins = fft.fft_exec(data->fft_in, data->meta.sample_rate);
-          fft.bins_print(bins);
+           bin_sums = fft.fft_exec(data->fft_in, data->meta.sample_rate, ranges);
+           for(u32 i = 0; i < bin_sums.size(); i++){
+            smooth_bin_sums[i] += interpolate(bin_sums[i], smooth_bin_sums[i], frame_alpha);
+            smear_bin_sums[i] += interpolate(smooth_bin_sums[i], smear_bin_sums[i], frame_alpha);
+           }
         }
 
         // dz += 1.0f * (1.0f / 60);
@@ -154,6 +155,9 @@ int main(int argc, char **argv)
                 break;
             }
         }
+
+        rend.draw_cube_lines(smear_bin_sums, vertices, triangle_indices, rend.get_smear_col());
+        rend.draw_cube_lines(smooth_bin_sums, vertices, triangle_indices, rend.get_box_col());
 
         // rend.draw_points(&translated);
         rend.present();

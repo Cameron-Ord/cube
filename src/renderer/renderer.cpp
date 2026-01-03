@@ -13,6 +13,31 @@ const f32 ZFAR = 10.0f;
 
 constexpr f32 FOV = 60.0f * DEG2RAD;
 
+f64 interpolate(const f64 &target, const f64 &current, const f64 &alpha){
+  return (target - current) * alpha;
+}
+
+renderer::renderer(const char *driver_name, i32 ww, i32 wh, SDL_Color bg, SDL_Color smear, SDL_Color box) 
+  : dname(driver_name), window_width(ww), window_height(wh), bg_col(bg), smear_col(smear), box_col(box) {}
+
+SDL_FColor renderer::icol_to_fcol(SDL_Color icol){
+  const f32 rf32 = static_cast<f32>(icol.r) / UINT8_MAX;
+  const f32 gf32 = static_cast<f32>(icol.g) / UINT8_MAX;
+  const f32 bf32 = static_cast<f32>(icol.b) / UINT8_MAX;
+  const f32 af32 = static_cast<f32>(icol.a) / UINT8_MAX;
+
+  return { rf32, gf32, bf32, af32 };
+}
+
+SDL_Color renderer::fcol_to_icol(SDL_FColor fcol){
+  const u8 r8 = static_cast<u8>(fcol.r) * UINT8_MAX;
+  const u8 g8 = static_cast<u8>(fcol.g) * UINT8_MAX;
+  const u8 b8 = static_cast<u8>(fcol.b) * UINT8_MAX;
+  const u8 a8 = static_cast<u8>(fcol.a) * UINT8_MAX;
+
+  return { r8, g8, b8, a8 };
+}
+
 void renderer::update_draw_plane(const i32 &&width, const i32 &&height)
 {
     window_width = width, window_height = height;
@@ -68,6 +93,38 @@ renderer::vertices_convert_sdl_vertex(const std::vector<grid_pos> &vertices, con
         conv.push_back({{pos.x, pos.y}, col, {0, 0}});
     }
     return conv;
+}
+
+void renderer::draw_cube_line(const u32& size, const f64& nsum, const f32& ndc_x_pos, const f32& ndc_bar_width, const std::vector<grid_pos>& vertices, const std::vector<indice3>& indices, const SDL_Color& col){
+  const f32 wheight = static_cast<f32>(window_height);
+  const f32 ndc_y_ceil = -1.0f + ((nsum * wheight) / wheight) * 2.0f;
+  const f32 ndc_box_height = ((wheight / size) / wheight) * 2.0f;
+
+  f32 ndc_y_pos = -1.0f;
+  for(u32 i = 0; i < size && ndc_y_pos < ndc_y_ceil; i++){
+    ndc_y_pos = -1.0f + i * ndc_box_height + ndc_box_height / 2;
+    const std::vector<grid_pos> scaled_vertices = scale_vertices(vertices, ndc_bar_width);
+    const std::vector<grid_pos> translated_vertices = translate_vertices_z(translate_vertices_y(translate_vertices_x(std::move(scaled_vertices), ndc_x_pos), ndc_y_pos), 2.0f);
+    render_triangles(std::move(translated_vertices), indices, icol_to_fcol(col));
+  }
+
+}
+
+void renderer::draw_cube_lines(const std::vector<f64>& interpolated_bin_sums, const std::vector<grid_pos>& vertices, const std::vector<indice3>& indices, const SDL_Color& col) {
+  const u32 size = static_cast<i32>(interpolated_bin_sums.size());
+  if(size > 0){
+    const f32 wwidth = static_cast<f32>(window_width);
+    f32 ndc_box_width = ((wwidth / size) / wwidth) * 2.0f;
+
+    for(u32 i = 0; i < size; i++){
+      const f64& nsum = interpolated_bin_sums[i];
+      if(nsum > 1.0 || nsum < 0.0){
+        continue;
+      }
+      const f32 ndc_x_pos = -1.0f + i  * ndc_box_width + ndc_box_width / 2;
+      draw_cube_line(size, nsum, ndc_x_pos, ndc_box_width * 0.5, vertices, indices, col);
+    }
+  }
 }
 
 veci32 renderer::indice3_flatten(const std::vector<indice3> &indices)
@@ -156,6 +213,15 @@ std::vector<grid_pos> renderer::rotate_vertices_xz(const std::vector<grid_pos> &
         rotated[i] = rotate_xz(vertices[i], angle);
     }
     return rotated;
+}
+
+
+std::vector<grid_pos> renderer::translate_vertices_y(const std::vector<grid_pos> &&vertices, const f32 &dy){
+    std::vector<grid_pos> translated = std::vector<grid_pos>(vertices);
+    for (size_t i = 0; i < vertices.size(); i++) {
+        translated[i] = translate_y(vertices[i], dy);
+    }
+    return translated;
 }
 
 std::vector<grid_pos> renderer::translate_vertices_x(const std::vector<grid_pos> &&vertices, const f32 &dx)

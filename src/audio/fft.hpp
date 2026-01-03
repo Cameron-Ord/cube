@@ -1,9 +1,8 @@
 #pragma once
 #include "../alias.hpp"
-#include <array>
+#define FREQUENCY_BINS 32
+#define FFT_SIZE 4096
 
-#define FREQUENCY_BINS 8
-#define FFT_SIZE 1024
 typedef struct
 {
     f64 real;
@@ -17,6 +16,10 @@ struct freq_range {
   f64 high;
 };
 
+
+void print_bins(const std::vector<freq_range>& ranges);
+std::vector<freq_range> gen_bins(void);
+
 struct transformer
 {
     transformer(void);
@@ -27,18 +30,14 @@ struct transformer
 
     f64 freq_range_sum(const f64& MIN_FREQ, const f64& MAX_FREQ, const i32& sample_rate);
     void compf_to_float(void);
-    std::array<f64, FREQUENCY_BINS> fft_exec(const vecf64 &fft_in, const i32& sample_rate);
+    std::vector<f64> fft_exec(const vecf64 &fft_in, const i32& sample_rate, const std::vector<freq_range>& ranges);
     size_t bit_reverse(size_t index, size_t log2n);
     void iterative_fft(vecf64 &fft_in);
     void hamming_window(vecf64 &fft_in);
     void calculate_window(void);
-    std::array<f64, FREQUENCY_BINS> sum_ranges(const i32& sample_rate);
-    std::array<f64, FREQUENCY_BINS> nsum_ranges(const i32& sample_rate);
-    void bins_print(std::array<f64, FREQUENCY_BINS>& bins);
+    std::vector<f64> sum_ranges(const i32& sample_rate, const std::vector<freq_range>& ranges);
+    std::vector<f64> nsum_ranges(const i32& sample_rate, const std::vector<freq_range>& ranges);
+    void bins_print(std::vector<f64>& bins);
 };
 
-struct processor
-{
-    f32 interpolate(const f32 &target_scale, const f32 &prev, const f32 &alpha);
-};
 

@@ -44,13 +44,12 @@ struct rect
     SDL_FRect box;
 };
 
+f64 interpolate(const f64 &target, const f64 &current, const f64 &alpha);
+
 class renderer
 {
   public:
-    renderer(const char *driver_name, i32 ww, i32 wh)
-        : dname(driver_name), window_width(ww), window_height(wh), r(nullptr)
-    {
-    }
+    renderer(const char *driver_name, i32 ww, i32 wh, SDL_Color bg, SDL_Color smear, SDL_Color box);
     ~renderer() = default;
 
     void print_indice4(const std::vector<indice4> &indices);
@@ -71,8 +70,12 @@ class renderer
     std::vector<grid_pos> rotate_vertices_xz(const std::vector<grid_pos> &&vertices, const f32 &angle);
     std::vector<grid_pos> rotate_vertices_yz(const std::vector<grid_pos> &&vertices, const f32 &angle);
     std::vector<grid_pos> translate_vertices_z(const std::vector<grid_pos> &&vertices, const f32 &dz);
+    std::vector<grid_pos> translate_vertices_y(const std::vector<grid_pos> &&vertices, const f32 &dz);
     std::vector<grid_pos> translate_vertices_x(const std::vector<grid_pos> &&vertices, const f32 &dz);
     scr_pos to_screen(const scr_pos &&p);
+
+    SDL_FColor icol_to_fcol(SDL_Color icol);
+    SDL_Color fcol_to_icol(SDL_FColor fcol);
 
     std::vector<grid_pos> scale_vertices(const std::vector<grid_pos> &gpos, f32 scale);
     std::vector<indice3> quad_to_triangle(const std::vector<indice4> &indices);
@@ -91,6 +94,9 @@ class renderer
     SDL_Renderer *get_renderer(void) { return r; }
     SDL_Renderer *create(SDL_Window *w);
 
+    void draw_cube_lines(const std::vector<f64>& bin_sums, const std::vector<grid_pos>& vertices, const std::vector<indice3>& indices, const SDL_Color& col);
+    void draw_cube_line(const u32& size, const f64& nsum, const f32& ndc_x_pos, const f32& ndc_bar_width, const std::vector<grid_pos>& vertices, const std::vector<indice3>& indices, const SDL_Color &col);
+
     std::vector<SDL_Vertex> vertices_convert_sdl_vertex(const std::vector<grid_pos> &vertices, const SDL_FColor &col);
     veci32 indice3_flatten(const std::vector<indice3> &indices);
 
@@ -103,8 +109,13 @@ class renderer
     void present(void);
     void update_draw_plane(const i32 &&width, const i32 &&height);
 
+    const SDL_Color& get_box_col(void) { return box_col; }
+    const SDL_Color& get_smear_col(void) { return smear_col; }
+    const SDL_Color& get_bg_col(void) { return bg_col; }
+
   private:
     const char *dname;
     i32 window_width, window_height;
+    SDL_Color bg_col, smear_col, box_col;
     SDL_Renderer *r;
 };
