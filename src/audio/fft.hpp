@@ -1,7 +1,7 @@
 #pragma once
 #include "../alias.hpp"
 #define FFT_SIZE 4096
-#define FREQUENCY_BINS 64
+#define FREQUENCY_BINS 32
 
 typedef struct
 {
@@ -33,8 +33,8 @@ struct transformer
     void calculate_window(void);
     f64 msum_compress_positive(f64 msum);
 
-    f64 mean_sum_in_range(const f64& min, const f64& max, const i32& sample_rate);
-    std::vector<f64> nmean_sum_in_ranges(const i32& sample_rate);
+    f64 sum_in_range(const f64& min, const f64& max, const i32& sample_rate);
+    std::vector<f64> nsum_in_ranges(const i32& sample_rate);
 };
 
 

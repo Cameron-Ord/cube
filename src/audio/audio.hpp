@@ -25,15 +25,15 @@ struct file_data
 
 struct meta_data
 {
-    meta_data(i32 chans, i32 sr, i32 file_samples, i32 file_bytes)
+    meta_data(i32 chans, i32 sr, u32 file_samples, u32 file_bytes)
         : channels(chans), sample_rate(sr), samples(file_samples), bytes(file_bytes), position(0)
     {
     }
     i32 channels;
     i32 sample_rate;
-    u32 samples;
-    u32 bytes;
-    u32 position;
+    u64 samples;
+    u64 bytes;
+    u64 position;
 };
 
 struct audio_data

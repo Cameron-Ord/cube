@@ -11,6 +11,8 @@ file_data open_file(const char *path)
     SF_INFO info;
     memset(&info, 0, sizeof(SF_INFO));
 
+    std::cout << "Trying to open: " << path << std::endl;
+
     SNDFILE *file = sf_open(path, SFM_READ, &info);
     if (!file) {
         log_write_str("Failed to open file:", sf_strerror(nullptr));
@@ -30,8 +32,8 @@ audio_data read_file(file_data file)
     std::cout << "Channels: " << file.channels << std::endl;
     std::cout << "Sample Rate: " << file.sample_rate << std::endl;
 
-    const u32 samples = file.frames * file.channels;
-    const u32 bytes = samples * sizeof(f32);
+    const u64 samples = file.frames * file.channels;
+    const u64 bytes = samples * sizeof(f32);
 
     unique_vecf32 buffer = std::make_unique<vecf32>(samples);
     if (sf_read_float(file.open, buffer->data(), samples) < 0) {

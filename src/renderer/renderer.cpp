@@ -77,9 +77,12 @@ void renderer::render_cube_lines(const cube_render_args&& args){
   const f64 step = (1.0 / args.element_count) * 2.0;
   const f64 scale = 1.0 / args.element_count;
   for(u32 i = 0; i < args.element_count; i++){
-      const f64 yend = (args.values[i] * 2.0) - 1.0;
-      render_cube_line(args, xstart, yend, scale);
-      xstart += step;
+    if(args.values[i] <= 0.0) {
+      continue;
+    }
+    const f64 yend = (args.values[i] * 2.0) - 1.0;
+    render_cube_line(args, xstart, yend, scale);
+    xstart += step;
   }
 }
 

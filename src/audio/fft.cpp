@@ -7,8 +7,8 @@
 
 const f64 EPS = 1e-20;
 const f64 GAIN = 20.0;
-const f64 FREQ_RANGE_MIN = 250.0;
-const f64 FREQ_RANGE_MAX = 20000.0;
+const f64 FREQ_RANGE_MIN = 100.0;
+const f64 FREQ_RANGE_MAX = 16000.0;
 
 transformer::transformer(void) : output(FFT_SIZE), magnitudes(FFT_SIZE / 2), hamming_values(FFT_SIZE)
 {
@@ -36,17 +36,21 @@ transformer::transformer(void) : output(FFT_SIZE), magnitudes(FFT_SIZE / 2), ham
 
 
 f64 transformer::msum_compress_positive(f64 msum){
-  const f64 f = msum + EPS;
-  return log(1.0 + f);
+  const f64 f = (msum * GAIN);
+  if(f > 0.0){
+    return log(1.0 + f);
+  } else {
+    return 0.0;
+  }
 }
 
-bin_sums transformer::fft_exec(const vecf64 &fft_in, const i32& sample_rate)
+std::vector<f64> transformer::fft_exec(const vecf64 &fft_in, const i32& sample_rate)
 {
     vecf64 samples = vecf64(fft_in);
     hamming_window(samples);
     iterative_fft(samples);
     compf_to_float();
-    return bin_sums(nmean_sum_in_ranges(sample_rate));
+    return nsum_in_ranges(sample_rate);
 }
 
 static compf64 c_from_real(const f64 real)
@@ -153,7 +157,7 @@ void transformer::compf_to_float(void)
     const size_t HALF_FFT_SIZE = FFT_SIZE / 2;
     for (size_t i = 0; i < HALF_FFT_SIZE; i++) {
         const compf64 &c = output[i];
-        magnitudes[i] = c.real * c.real + c.imag * c.imag;
+        magnitudes[i] = sqrt(c.real * c.real + c.imag * c.imag);
     }
 }
 
@@ -173,37 +177,34 @@ void transformer::calculate_window(void)
 }
 
 
-std::vector<f64> transformer::nmean_sum_in_ranges(const i32& sample_rate){
-  std::vector<f64> nmean_sums;
+std::vector<f64> transformer::nsum_in_ranges(const i32& sample_rate){
+  std::vector<f64> nsums(FREQUENCY_BINS);
   f64 max = 0.0;
   for(u32 i = 0; i < ranges.size(); i++){
     const freq_range& range = ranges[i];
-    const f64 msum = msum_compress_positive(mean_sum_in_range(range.low, range.high, sample_rate));
-    if(msum > max){
-      max = msum;
+    const f64 sum = msum_compress_positive(sum_in_range(range.low, range.high, sample_rate));
+    if(sum > max){
+      max = sum;
     }
-    nmean_sums.push_back(msum);
+    nsums[i] = sum;
   }
 
   //normalize 0 .. 1
-  for(u32 i = 0; i < nmean_sums.size() && max > 0.0; i++){
-    nmean_sums[i] /= max;
+  for(u32 i = 0; i < nsums.size() && max > 0.0; i++){
+    nsums[i] /= max;
   }
-  return nmean_sums;
+  return nsums;
 }
 
-f64 transformer::mean_sum_in_range(const f64& min, const f64& max, const i32& sample_rate)
+f64 transformer::sum_in_range(const f64& min, const f64& max, const i32& sample_rate)
 {
     const u32 bin_max = (max * FFT_SIZE / sample_rate);
     const u32 bin_min = (min * FFT_SIZE / sample_rate);
     f64 sum = 0.0;
     for (u32 i = bin_min; i < bin_max && i < magnitudes.size(); i++) {
-        sum += magnitudes[i];
+        sum += magnitudes[i] * magnitudes[i];
     }
 
-    if(bin_max - bin_min > 0)
-      return sum / (bin_max - bin_min);
-
-    return 0.0;
+    return sum;
 }
 
