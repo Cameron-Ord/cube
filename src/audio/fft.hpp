@@ -1,10 +1,7 @@
 #pragma once
 #include "../alias.hpp"
 #define FFT_SIZE 4096
-
-#define EMA_LESS -1
-#define EMA_DEFAULT 0
-#define EMA_MORE 1
+#define FREQUENCY_BINS 64
 
 typedef struct
 {
@@ -19,33 +16,25 @@ struct freq_range {
   f64 high;
 };
 
-
-f64 ema_calculate(f64 val, f64 alpha);
-void ema_update(f64 val);
-i8 to_ema(f64 val);
-
-
-
 struct transformer
 {
     transformer(void);
 
     vec_compf64 output;
-    vecf64 amplitudes;
+    vecf64 magnitudes;
     vecf64 hamming_values;
+    std::vector<freq_range> ranges;
 
-    f64 mean_to_db(f64 mean);
-    f64 rms_to_db(f64 rms);
-    f64 rms(f64 mean);
-    f64 normalize_db(f64 db);
     void compf_to_float(void);
-    f64 fft_exec(const vecf64 &fft_in, const i32& sample_rate);
+    std::vector<f64> fft_exec(const vecf64 &fft_in, const i32& sample_rate);
     size_t bit_reverse(size_t index, size_t log2n);
     void iterative_fft(vecf64 &fft_in);
     void hamming_window(vecf64 &fft_in);
     void calculate_window(void);
-    f64 mean_sum_in_range(const i32& sample_rate);
+    f64 msum_compress_positive(f64 msum);
 
+    f64 mean_sum_in_range(const f64& min, const f64& max, const i32& sample_rate);
+    std::vector<f64> nmean_sum_in_ranges(const i32& sample_rate);
 };
 
 

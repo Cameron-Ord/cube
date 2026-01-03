@@ -72,6 +72,29 @@ void renderer::present(void) { SDL_RenderPresent(r); }
 
 void renderer::fill_rect(rect builder) { SDL_RenderFillRect(r, &builder.box); }
 
+void renderer::render_cube_lines(const cube_render_args&& args){
+  f64 xstart = -1.0;
+  const f64 step = (1.0 / args.element_count) * 2.0;
+  const f64 scale = 1.0 / args.element_count;
+  for(u32 i = 0; i < args.element_count; i++){
+      const f64 yend = (args.values[i] * 2.0) - 1.0;
+      render_cube_line(args, xstart, yend, scale);
+      xstart += step;
+  }
+}
+
+void renderer::render_cube_line(const cube_render_args& args, const f64& xstart, const f64& yend, const f64& scale){
+  f64 ystart = -1.0;
+  const f64 step = (1.0 / args.element_count) * 2.0;
+  while(ystart < yend){
+    const SDL_FColor fcol = icol_to_fcol(args.colour);
+    render_triangles(
+        translate_vertices_y(translate_vertices_x(translate_vertices_z(scale_vertices(args.vertices, scale), 2.0), xstart), ystart),
+        args.indices, fcol);
+    ystart += step;
+  }
+}
+
 void renderer::render_triangles(
     const std::vector<grid_pos> &&vertices, const std::vector<indice3> &indices, const SDL_FColor &col)
 {

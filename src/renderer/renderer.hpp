@@ -46,6 +46,17 @@ struct rect
 
 f64 interpolate(const f64 &target, const f64 &current, const f64 &alpha);
 
+struct cube_render_args {
+  cube_render_args(const u32& elements, const std::vector<f64>&sums, 
+      const std::vector<grid_pos>&verts, const std::vector<indice3>& inds, const SDL_Color& col) 
+    : element_count(elements), values(sums), vertices(verts), indices(inds), colour(col) {}
+  const u32& element_count;
+  const std::vector<f64>& values;
+  const std::vector<grid_pos>& vertices;
+  const std::vector<indice3>& indices;
+  const SDL_Color& colour;
+};
+
 class renderer
 {
   public:
@@ -56,23 +67,19 @@ class renderer
     void print_indice3(const std::vector<indice3> &indices);
     void print_edges(const std::vector<edge> &edges);
 
-    // These functions are meant to be called with a vertices vector that has had
-    // all its transformations done on it and then piped straight into the
-    // function, so they take rvalue references
     void render_triangles(
         const std::vector<grid_pos> &&vertices, const std::vector<indice3> &indices, const SDL_FColor &col);
     void
     render_wire_frame(const std::vector<grid_pos> &&vertices, const std::vector<edge> &edges, const SDL_Color &col);
-    // Same idea here but its just considering the pipeline of
-    // scale->rotate->transform->render, making copies every time would be
-    // wasteful, but i mean is this optimization really necessary in this case?
-    // who cares.
     std::vector<grid_pos> rotate_vertices_xz(const std::vector<grid_pos> &&vertices, const f32 &angle);
     std::vector<grid_pos> rotate_vertices_yz(const std::vector<grid_pos> &&vertices, const f32 &angle);
     std::vector<grid_pos> translate_vertices_z(const std::vector<grid_pos> &&vertices, const f32 &dz);
     std::vector<grid_pos> translate_vertices_y(const std::vector<grid_pos> &&vertices, const f32 &dz);
     std::vector<grid_pos> translate_vertices_x(const std::vector<grid_pos> &&vertices, const f32 &dz);
     scr_pos to_screen(const scr_pos &&p);
+
+    void render_cube_lines(const cube_render_args&& args);
+    void render_cube_line(const cube_render_args& args, const f64& xstart, const f64& yend, const f64& scale);
 
     SDL_FColor icol_to_fcol(SDL_Color icol);
     SDL_Color fcol_to_icol(SDL_FColor fcol);

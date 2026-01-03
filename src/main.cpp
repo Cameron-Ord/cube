@@ -96,20 +96,20 @@ int main(int argc, char **argv)
     std::vector<indice3> triangle_indices = rend.quad_to_triangle(indices);
     transformer fft;
 
+    std::vector<f64> interpolated_sums;
+
     SDL_ShowWindow(win.get_window());
     SDL_EnableScreenSaver();
 
     // a = 1 - e(-t / time_constant)
     const u32 FPS = 60;
-    const f32 falling = 1.0 - exp(-1.0 / (FPS * 0.25));
-    const f32 rising = 1.0 - exp(-1.0 / (FPS * 0.07));
+    const f32 falling = 1.0 - exp(-1.0 / (FPS * 0.27));
+    const f32 rising = 1.0 - exp(-1.0 / (FPS * 0.09));
 
     const u32 frame_gate = 1000 / FPS;
-    bool running = true;
-    // f32 dz = 0.0f;
     f32 angle = 0.0f;
-    f64 scale = 0.0;
 
+    bool running = true;
     while (running) {
         u64 start = SDL_GetTicks();
         rend.colour(background.r, background.g, background.b, background.a);
@@ -123,13 +123,9 @@ int main(int argc, char **argv)
         }
 
         if (data->valid && data->meta.position < data->meta.samples) {
-           const f64 energy = fft.fft_exec(data->fft_in, data->meta.sample_rate);
-           if(energy > scale){
-            scale += interpolate(energy, scale, rising);
-           } else {
-            scale += interpolate(energy, scale, falling);
-           }
-          scale = std::clamp(scale, 0.1, 1.0);
+          std::vector<f64> mlog_sums = fft.fft_exec(data->fft_in, data->meta.sample_rate);
+          if(mlog_sums > interpolated_sums){
+            interpolated_sums += interpolate();
         }
 
         // dz += 1.0f * (1.0f / 60);
@@ -152,10 +148,7 @@ int main(int argc, char **argv)
                 break;
             }
         }
-        
-        SDL_FColor smooth_col = rend.icol_to_fcol(rend.get_box_col());
-        rend.render_triangles(rend.translate_vertices_z(rend.rotate_vertices_yz(rend.rotate_vertices_xz(rend.scale_vertices(vertices, scale), angle), angle), 1.5), triangle_indices, smooth_col);
-        rend.render_wire_frame(rend.translate_vertices_z(rend.rotate_vertices_yz(rend.rotate_vertices_xz(rend.scale_vertices(vertices, scale), angle), angle), 1.5), edges, foreground);
+        rend.render_cube_lines(cube_render_args(FREQUENCY_BINS, sums.mlog_sums, vertices, triangle_indices, box_col));
         // rend.draw_points(&translated);
         rend.present();
 

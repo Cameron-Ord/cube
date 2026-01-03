@@ -1,45 +1,52 @@
 #include "fft.hpp"
 #include "../util.hpp"
 #include <algorithm> 
+#include <iostream>
 #include <cmath>
 
-const f64 FREQ_RANGE_MIN = 40.0;
-const f64 FREQ_RANGE_MAX = 8000.0;
-const f64 DB_MIN = -60.0;
-const f64 DB_MAX = -8.0;
 
-float avg = 0.0;
+const f64 EPS = 1e-20;
+const f64 GAIN = 20.0;
+const f64 FREQ_RANGE_MIN = 250.0;
+const f64 FREQ_RANGE_MAX = 20000.0;
 
-f64 ema_calculate(f64 val, f64 alpha){
-  return alpha * val + (1.0 - alpha) * avg;
-}
-
-void ema_update(f64 val){
-  avg = val;
-}
-
-i8 to_ema(f64 val){
-  if(val < avg){
-    return EMA_LESS;
-  }  else if (val > avg){
-    return EMA_MORE;
-  } else {
-    return EMA_DEFAULT;
-  }
-}
-
-transformer::transformer(void) : output(FFT_SIZE), amplitudes(FFT_SIZE / 2), hamming_values(FFT_SIZE)
+transformer::transformer(void) : output(FFT_SIZE), magnitudes(FFT_SIZE / 2), hamming_values(FFT_SIZE)
 {
     calculate_window();
+
+    const f64 RATIO = FREQ_RANGE_MAX / FREQ_RANGE_MIN;
+    ranges.resize(FREQUENCY_BINS, freq_range(0, 0));
+
+    for(i32 i = 0; i < FREQUENCY_BINS; i++){
+      const f64 first = (f64)i / FREQUENCY_BINS;
+      const f64 last = (f64)(i+1) / FREQUENCY_BINS;
+
+      const f64 low = FREQ_RANGE_MIN * pow(RATIO, first);
+      const f64 high = FREQ_RANGE_MIN * pow(RATIO, last);
+
+      ranges[i] = freq_range(low, high);
+    }
+
+    std::cout << "BIN COUNT: " << ranges.size() << std::endl;
+
+    for(u32 i = 0; i < ranges.size(); i++){
+      std::cout << i + 1 << "{ " << ranges[i].low << ", " << ranges[i].high << " }" << std::endl;
+    }
 }
 
-f64 transformer::fft_exec(const vecf64 &fft_in, const i32& sample_rate)
+
+f64 transformer::msum_compress_positive(f64 msum){
+  const f64 f = msum + EPS;
+  return log(1.0 + f);
+}
+
+bin_sums transformer::fft_exec(const vecf64 &fft_in, const i32& sample_rate)
 {
     vecf64 samples = vecf64(fft_in);
     hamming_window(samples);
     iterative_fft(samples);
     compf_to_float();
-    return normalize_db(mean_to_db(mean_sum_in_range(sample_rate)));
+    return bin_sums(nmean_sum_in_ranges(sample_rate));
 }
 
 static compf64 c_from_real(const f64 real)
@@ -146,7 +153,7 @@ void transformer::compf_to_float(void)
     const size_t HALF_FFT_SIZE = FFT_SIZE / 2;
     for (size_t i = 0; i < HALF_FFT_SIZE; i++) {
         const compf64 &c = output[i];
-        amplitudes[i] = sqrt(c.real * c.real + c.imag * c.imag);
+        magnitudes[i] = c.real * c.real + c.imag * c.imag;
     }
 }
 
@@ -166,36 +173,36 @@ void transformer::calculate_window(void)
 }
 
 
-f64 transformer::mean_to_db(f64 mean) {
-    return 10.0 * log10(mean + 1e-20);
+std::vector<f64> transformer::nmean_sum_in_ranges(const i32& sample_rate){
+  std::vector<f64> nmean_sums;
+  f64 max = 0.0;
+  for(u32 i = 0; i < ranges.size(); i++){
+    const freq_range& range = ranges[i];
+    const f64 msum = msum_compress_positive(mean_sum_in_range(range.low, range.high, sample_rate));
+    if(msum > max){
+      max = msum;
+    }
+    nmean_sums.push_back(msum);
+  }
+
+  //normalize 0 .. 1
+  for(u32 i = 0; i < nmean_sums.size() && max > 0.0; i++){
+    nmean_sums[i] /= max;
+  }
+  return nmean_sums;
 }
 
-f64 transformer::rms_to_db(f64 rms) {
-    return 20.0 * log10(rms + 1e-20);
-}
-
-f64 transformer::normalize_db(f64 db){
-  return std::clamp((db - DB_MIN) / (DB_MAX - DB_MIN), 0.0, 1.0);
-}
-
-f64 transformer::rms(f64 mean){
-  return sqrt(mean);
-}
-
-f64 transformer::mean_sum_in_range(const i32& sample_rate)
+f64 transformer::mean_sum_in_range(const f64& min, const f64& max, const i32& sample_rate)
 {
-    const u32 bin_max = (FREQ_RANGE_MAX * FFT_SIZE / sample_rate);
-    const u32 bin_min = (FREQ_RANGE_MIN * FFT_SIZE / sample_rate);
+    const u32 bin_max = (max * FFT_SIZE / sample_rate);
+    const u32 bin_min = (min * FFT_SIZE / sample_rate);
     f64 sum = 0.0;
-    u32 count = 0;
-    
-    for (u32 i = bin_min; i < bin_max && i < amplitudes.size(); i++) {
-        sum += amplitudes[i] * amplitudes[i];
-        count++;
+    for (u32 i = bin_min; i < bin_max && i < magnitudes.size(); i++) {
+        sum += magnitudes[i];
     }
 
-    if(count > 0)
-      return sum / count;
+    if(bin_max - bin_min > 0)
+      return sum / (bin_max - bin_min);
 
     return 0.0;
 }
