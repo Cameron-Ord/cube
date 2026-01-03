@@ -5,8 +5,8 @@
 
 const f64 FREQ_RANGE_MIN = 40.0;
 const f64 FREQ_RANGE_MAX = 300.0;
-const f64 DB_MIN = -80.0;
-const f64 DB_MAX = -6.0;
+const f64 DB_MIN = -60.0;
+const f64 DB_MAX = -8.0;
 
 float avg = 0.0;
 
