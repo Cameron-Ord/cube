@@ -10,6 +10,7 @@
 #include <iostream>
 
 const SDL_Color background = {76, 86, 106, 255};
+const SDL_Color foreground = {129, 161, 193, 255};
 const SDL_Color smear_col = {163, 190, 140, 255};
 const SDL_Color box_col = {94, 129, 172, 255};
 
@@ -99,21 +100,23 @@ int main(int argc, char **argv)
     SDL_EnableScreenSaver();
 
     // a = 1 - e(-t / time_constant)
-    const u32 FPS = 120;
-    const f32 frame_alpha = 1.0 - exp(-1.0 / (FPS * 0.08));
+    const u32 FPS = 60;
+ 
+    const f32 ema_alpha = 1.0 - exp(-1.0 / (FPS * 0.12));
+    const f32 smooth_alpha = 1.0 - exp(-1.0 / (FPS * 0.16));
+    const f32 smear_alpha = 1.0 - exp(-1.0 / (FPS * 0.33));
 
     const u32 frame_gate = 1000 / FPS;
     bool running = true;
 
+    const f64 SCALE_MIN = 0.25;
+    const f64 SCALE_BASE = 0.75;
+    const f64 SCALE_MAX = 1.0;
+
     // f32 dz = 0.0f;
     f32 angle = 0.0f;
-
-    std::vector<freq_range> ranges = gen_bins();
-    std::vector<f64> bin_sums(FREQUENCY_BINS);
-    std::vector<f64> smooth_bin_sums(FREQUENCY_BINS);
-    std::vector<f64> smear_bin_sums(FREQUENCY_BINS);
-
-    print_bins(ranges);
+    f64 smear = 0.0;
+    f64 smooth = 0.0;
 
     while (running) {
         u64 start = SDL_GetTicks();
@@ -128,11 +131,24 @@ int main(int argc, char **argv)
         }
 
         if (data->valid && data->meta.position < data->meta.samples) {
-           bin_sums = fft.fft_exec(data->fft_in, data->meta.sample_rate, ranges);
-           for(u32 i = 0; i < bin_sums.size(); i++){
-            smooth_bin_sums[i] += interpolate(bin_sums[i], smooth_bin_sums[i], frame_alpha);
-            smear_bin_sums[i] += interpolate(smooth_bin_sums[i], smear_bin_sums[i], frame_alpha);
-           }
+           const f64 energy = fft.fft_exec(data->fft_in, data->meta.sample_rate);
+           switch(to_ema(energy)){
+              default: {  
+                smooth += interpolate(SCALE_BASE, smooth, smooth_alpha);
+                smear += interpolate(smooth, smear, smear_alpha);
+              } break;
+
+              case EMA_MORE:{
+                smooth += interpolate(SCALE_MAX, smooth, smooth_alpha);
+                smear += interpolate(smooth, smear, smear_alpha);
+              }break;
+
+              case EMA_LESS:{
+                smooth += interpolate(SCALE_MIN, smooth, smooth_alpha);
+                smear += interpolate(smooth, smear, smear_alpha);
+              }break;
+           }  
+           ema_update(ema_calculate(energy, ema_alpha));
         }
 
         // dz += 1.0f * (1.0f / 60);
@@ -155,10 +171,12 @@ int main(int argc, char **argv)
                 break;
             }
         }
-
-        rend.draw_cube_lines(smear_bin_sums, vertices, triangle_indices, rend.get_smear_col());
-        rend.draw_cube_lines(smooth_bin_sums, vertices, triangle_indices, rend.get_box_col());
-
+        
+        SDL_FColor smooth_col = rend.icol_to_fcol(rend.get_box_col());
+        SDL_FColor smear_col = rend.icol_to_fcol(rend.get_smear_col());
+        rend.render_triangles(rend.translate_vertices_z(rend.rotate_vertices_yz(rend.rotate_vertices_xz(rend.scale_vertices(vertices, smear), angle), angle), 1.5), triangle_indices, smear_col);
+        rend.render_triangles(rend.translate_vertices_z(rend.rotate_vertices_yz(rend.rotate_vertices_xz(rend.scale_vertices(vertices, smooth), angle), angle), 1.5), triangle_indices, smooth_col);
+        rend.render_wire_frame(rend.translate_vertices_z(rend.rotate_vertices_yz(rend.rotate_vertices_xz(rend.scale_vertices(vertices, smooth), angle), angle), 1.5), edges, foreground);
         // rend.draw_points(&translated);
         rend.present();
 

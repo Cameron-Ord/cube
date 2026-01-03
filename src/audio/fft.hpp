@@ -1,7 +1,10 @@
 #pragma once
 #include "../alias.hpp"
-#define FREQUENCY_BINS 64
 #define FFT_SIZE 4096
+
+#define EMA_LESS -1
+#define EMA_DEFAULT 0
+#define EMA_MORE 1
 
 typedef struct
 {
@@ -17,8 +20,11 @@ struct freq_range {
 };
 
 
-void print_bins(const std::vector<freq_range>& ranges);
-std::vector<freq_range> gen_bins(void);
+f64 ema_calculate(f64 val, f64 alpha);
+void ema_update(f64 val);
+i8 to_ema(f64 val);
+
+
 
 struct transformer
 {
@@ -28,16 +34,18 @@ struct transformer
     vecf64 amplitudes;
     vecf64 hamming_values;
 
-    f64 freq_range_sum(const f64& MIN_FREQ, const f64& MAX_FREQ, const i32& sample_rate);
+    f64 mean_to_db(f64 mean);
+    f64 rms_to_db(f64 rms);
+    f64 rms(f64 mean);
+    f64 normalize_db(f64 db);
     void compf_to_float(void);
-    std::vector<f64> fft_exec(const vecf64 &fft_in, const i32& sample_rate, const std::vector<freq_range>& ranges);
+    f64 fft_exec(const vecf64 &fft_in, const i32& sample_rate);
     size_t bit_reverse(size_t index, size_t log2n);
     void iterative_fft(vecf64 &fft_in);
     void hamming_window(vecf64 &fft_in);
     void calculate_window(void);
-    std::vector<f64> sum_ranges(const i32& sample_rate, const std::vector<freq_range>& ranges);
-    std::vector<f64> nsum_ranges(const i32& sample_rate, const std::vector<freq_range>& ranges);
-    void bins_print(std::vector<f64>& bins);
+    f64 mean_sum_in_range(const i32& sample_rate);
+
 };
 
 

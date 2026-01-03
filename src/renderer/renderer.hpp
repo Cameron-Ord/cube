@@ -94,9 +94,6 @@ class renderer
     SDL_Renderer *get_renderer(void) { return r; }
     SDL_Renderer *create(SDL_Window *w);
 
-    void draw_cube_lines(const std::vector<f64>& bin_sums, const std::vector<grid_pos>& vertices, const std::vector<indice3>& indices, const SDL_Color& col);
-    void draw_cube_line(const u32& size, const f64& nsum, const f32& ndc_x_pos, const f32& ndc_bar_width, const std::vector<grid_pos>& vertices, const std::vector<indice3>& indices, const SDL_Color &col);
-
     std::vector<SDL_Vertex> vertices_convert_sdl_vertex(const std::vector<grid_pos> &vertices, const SDL_FColor &col);
     veci32 indice3_flatten(const std::vector<indice3> &indices);
 
