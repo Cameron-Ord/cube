@@ -99,8 +99,8 @@ int main(int argc, char **argv)
     SDL_EnableScreenSaver();
 
     // a = 1 - e(-t / time_constant)
-    const u32 FPS = 60;
-    const f32 frame_alpha = 1.0 - exp(-1.0 / (FPS * 0.05));
+    const u32 FPS = 120;
+    const f32 frame_alpha = 1.0 - exp(-1.0 / (FPS * 0.08));
 
     const u32 frame_gate = 1000 / FPS;
     bool running = true;
