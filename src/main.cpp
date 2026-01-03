@@ -102,20 +102,19 @@ int main(int argc, char **argv)
     // a = 1 - e(-t / time_constant)
     const u32 FPS = 60;
  
-    const f32 ema_alpha = 1.0 - exp(-1.0 / (FPS * 0.12));
-    const f32 smooth_alpha = 1.0 - exp(-1.0 / (FPS * 0.16));
-    const f32 smear_alpha = 1.0 - exp(-1.0 / (FPS * 0.33));
+    const f32 ema_alpha = 1.0 - exp(-1.0 / (FPS * 0.06));
+    const f32 smooth_alpha = 1.0 - exp(-1.0 / (FPS * 0.09));
+    const f32 smear_alpha = 1.0 - exp(-1.0 / (FPS * 0.12));
 
     const u32 frame_gate = 1000 / FPS;
     bool running = true;
 
-    const f64 SCALE_MIN = 0.25;
-    const f64 SCALE_BASE = 0.75;
+    const f64 SCALE_MIN = 0.80;
+    const f64 SCALE_BASE = 0.90;
     const f64 SCALE_MAX = 1.0;
 
     // f32 dz = 0.0f;
     f32 angle = 0.0f;
-    f64 smear = 0.0;
     f64 smooth = 0.0;
 
     while (running) {
@@ -135,17 +134,14 @@ int main(int argc, char **argv)
            switch(to_ema(energy)){
               default: {  
                 smooth += interpolate(SCALE_BASE, smooth, smooth_alpha);
-                smear += interpolate(smooth, smear, smear_alpha);
               } break;
 
               case EMA_MORE:{
                 smooth += interpolate(SCALE_MAX, smooth, smooth_alpha);
-                smear += interpolate(smooth, smear, smear_alpha);
               }break;
 
               case EMA_LESS:{
                 smooth += interpolate(SCALE_MIN, smooth, smooth_alpha);
-                smear += interpolate(smooth, smear, smear_alpha);
               }break;
            }  
            ema_update(ema_calculate(energy, ema_alpha));
@@ -173,8 +169,6 @@ int main(int argc, char **argv)
         }
         
         SDL_FColor smooth_col = rend.icol_to_fcol(rend.get_box_col());
-        SDL_FColor smear_col = rend.icol_to_fcol(rend.get_smear_col());
-        rend.render_triangles(rend.translate_vertices_z(rend.rotate_vertices_yz(rend.rotate_vertices_xz(rend.scale_vertices(vertices, smear), angle), angle), 1.5), triangle_indices, smear_col);
         rend.render_triangles(rend.translate_vertices_z(rend.rotate_vertices_yz(rend.rotate_vertices_xz(rend.scale_vertices(vertices, smooth), angle), angle), 1.5), triangle_indices, smooth_col);
         rend.render_wire_frame(rend.translate_vertices_z(rend.rotate_vertices_yz(rend.rotate_vertices_xz(rend.scale_vertices(vertices, smooth), angle), angle), 1.5), edges, foreground);
         // rend.draw_points(&translated);
