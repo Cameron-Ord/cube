@@ -136,6 +136,7 @@ int main(int argc, char **argv)
             stream.pause_audio();
             entry_iterator = get_next_entry(strvec_view(entries.entry_paths, entry_iterator));
             *data = read_file(open_file(entry_iterator->c_str()));
+            std::cout << data->buffer << std::endl;
             if (!data->buffer){
                return program_exit(stream, 1);            
             }

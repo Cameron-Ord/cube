@@ -29,6 +29,9 @@ file_data open_file(const char *path)
 
 audio_data read_file(file_data file)
 {
+  if(!file.open){
+      return audio_data(nullptr, vecf64(), meta_data(0, 0, 0, 0), false);
+  }
     std::cout << "Channels: " << file.channels << std::endl;
     std::cout << "Sample Rate: " << file.sample_rate << std::endl;
 
@@ -36,12 +39,11 @@ audio_data read_file(file_data file)
     const u64 bytes = samples * sizeof(f32);
 
     unique_vecf32 buffer = std::make_unique<vecf32>(samples);
-    if (sf_read_float(file.open, buffer->data(), samples) < 0) {
+    if (!sf_read_float(file.open, buffer->data(), samples)) {
         log_write_str("Error while reading audio chunks:", sf_strerror(file.open));
         sf_close(file.open);
         return audio_data(nullptr, vecf64(), meta_data(0, 0, 0, 0), false);
     }
     sf_close(file.open);
-    return audio_data(
-        std::move(buffer), vecf64(FFT_SIZE), meta_data(file.channels, file.sample_rate, samples, bytes), true);
+    return audio_data(std::move(buffer), vecf64(FFT_SIZE), meta_data(file.channels, file.sample_rate, samples, bytes), true);
 }
