@@ -1,19 +1,21 @@
 #include "../util.hpp"
-#include "audio.hpp"
-#include "fft.hpp"
+#include "../entries.hpp"
+
 #include <cstring>
 #include <iostream>
-#include <sndfile.h>
-#include <vector>
 
-file_data open_file(const char *path)
+file_data open_file(const path& path)
 {
     SF_INFO info;
     memset(&info, 0, sizeof(SF_INFO));
-
-    std::cout << "Trying to open: " << path << std::endl;
-
-    SNDFILE *file = sf_open(path, SFM_READ, &info);
+    SNDFILE *file = nullptr;
+    
+#ifdef _WIN32
+  file = sf_wchar_open(path.wstring.c_str(), SFM_READ, &info);
+#else
+  const char *rpathstr = reinterpret_cast<const char*>(path.u8string.c_str());
+  file = sf_open(rpathstr, SFM_READ, &info);
+#endif
     if (!file) {
         log_write_str("Failed to open file:", sf_strerror(nullptr));
         return file_data(nullptr, 0, 0, 0, 0);

@@ -1,6 +1,7 @@
 #include "fft.hpp"
+#include "adef.hpp"
 #include "../util.hpp"
-#include <algorithm> 
+
 #include <iostream>
 #include <cmath>
 

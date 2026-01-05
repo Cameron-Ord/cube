@@ -5,14 +5,13 @@
 
 contents get_directory_contents(const std::string &path)
 {
-    strvec epaths(0), enames(0);
+    pathvec epaths(0), enames(0);
     bool is_valid = true, is_empty = true;
     size_t i = 0;
     try {
         for (const auto &entry : std::filesystem::directory_iterator(path)) {
-            std::cout << entry.path().string() << std::endl;
-            epaths.push_back(entry.path().string());
-            enames.push_back(entry.path().filename().string());
+            epaths.push_back({entry.path().wstring(), entry.path().u8string()});
+            enames.push_back({entry.path().filename().wstring(), entry.path().filename().u8string()});
             i++;
         }
     } catch (const std::filesystem::filesystem_error &e) {
@@ -25,9 +24,9 @@ contents get_directory_contents(const std::string &path)
     return contents(epaths, enames, is_valid, is_empty);
 }
 
-strvec::iterator get_next_entry(strvec_view iter)
+pathvec::iterator get_next_entry(paths_view iter)
 {
-    strvec::iterator next_entry = std::next(iter.current);
+    pathvec::iterator next_entry = std::next(iter.current);
     if (next_entry == iter.end) {
         next_entry = iter.start;
     }

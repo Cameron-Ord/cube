@@ -2,9 +2,7 @@
 
 #include <cstdint>
 #include <memory>
-#include <string>
 #include <vector>
-
 
 typedef int8_t i8;
 typedef uint8_t u8;
@@ -17,7 +15,6 @@ typedef uint32_t u32;
 typedef float f32;
 typedef double f64;
 
-using strvec = std::vector<std::string>;
 using veci32 = std::vector<i32>;
 using vecf32 = std::vector<f32>;
 using vecf64 = std::vector<f64>;

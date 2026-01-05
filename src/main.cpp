@@ -6,7 +6,6 @@
 #include "window/window.hpp"
 #include <SDL3/SDL.h>
 #include <cmath>
-#include <algorithm>
 #include <iostream>
 
 const SDL_Color background = {76, 86, 106, 255};
@@ -37,7 +36,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    contents entries = contents(strvec(0), strvec(0), false, true);
+    contents entries = contents(pathvec(0), pathvec(0), false, true);
     if (argc > 1 && argc < 3) {
         std::string dir = std::string(argv[1]);
         entries = get_directory_contents(dir);
@@ -59,10 +58,9 @@ int main(int argc, char **argv)
     }
     stream.pause_audio();
 
-    strvec::iterator entry_iterator = entries.entry_paths.begin();
+    pathvec::iterator entry_iterator = entries.entry_paths.begin();
     std::unique_ptr<audio_data> data = std::make_unique<audio_data>(nullptr, vecf64(), meta_data(0, 0, 0, 0), false);
-    const char *path = (*entry_iterator).c_str();
-    *data = read_file(open_file(path));
+    *data = read_file(open_file(*entry_iterator));
     if(!data->buffer){
       return program_exit(stream, 1);
     }
@@ -134,8 +132,8 @@ int main(int argc, char **argv)
 
         if (data->valid && data->meta.position >= data->meta.samples) {
             stream.pause_audio();
-            entry_iterator = get_next_entry(strvec_view(entries.entry_paths, entry_iterator));
-            *data = read_file(open_file(entry_iterator->c_str()));
+            entry_iterator = get_next_entry(paths_view(entries.entry_paths, entry_iterator));
+            *data = read_file(open_file(*entry_iterator));
             std::cout << data->buffer << std::endl;
             if (!data->buffer){
                return program_exit(stream, 1);            

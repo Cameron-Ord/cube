@@ -8,8 +8,6 @@ const f32 LEFT = -1.0f;
 const f32 RIGHT = 1.0f;
 const f32 TOP = 1.0f;
 const f32 BOTTOM = -1.0f;
-const f32 ZNEAR = 0.1f;
-const f32 ZFAR = 10.0f;
 
 constexpr f32 FOV = 60.0f * DEG2RAD;
 

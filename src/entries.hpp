@@ -1,27 +1,39 @@
 #pragma once
-#include "alias.hpp"
+#include "audio/adef.hpp"
 
-struct strvec_view
+#include <string>
+#include <vector>
+
+struct path {
+  std::wstring wstring;
+  std::u8string u8string;
+};
+
+using pathvec = std::vector<path>;
+
+struct paths_view
 {
-    strvec_view(strvec &entrylist, strvec::iterator &pos) : current(pos), end(entrylist.end()), start(entrylist.begin())
+    paths_view(pathvec &entrylist, pathvec::iterator &pos) : current(pos), end(entrylist.end()), start(entrylist.begin())
     {
     }
-    strvec::iterator current;
-    strvec::iterator end;
-    strvec::iterator start;
+    pathvec::iterator current;
+    pathvec::iterator end;
+    pathvec::iterator start;
 };
 
 struct contents
 {
-    contents(strvec paths, strvec filenames, bool is_valid, bool is_empty)
+    contents(pathvec paths, pathvec filenames, bool is_valid, bool is_empty)
         : entry_paths(paths), entry_filenames(filenames), valid(is_valid), empty(is_empty)
     {
     }
-    strvec entry_paths;
-    strvec entry_filenames;
+    pathvec entry_paths;
+    pathvec entry_filenames;
     bool valid;
     bool empty;
 };
 
-strvec::iterator get_next_entry(strvec_view iter);
+pathvec::iterator get_next_entry(paths_view iter);
 contents get_directory_contents(const std::string &path);
+audio_data read_file(file_data file);
+file_data open_file(const path &path);

@@ -1,7 +1,5 @@
 #pragma once
 #include "../alias.hpp"
-#define FFT_SIZE 4096
-#define FREQUENCY_BINS 32
 
 typedef struct
 {
